@@ -1,5 +1,6 @@
 #pragma once
 #include <d3d11.h>
+#include <map>
 
 namespace rdclight
 {
@@ -307,10 +308,29 @@ namespace rdclight
 
 		virtual UINT STDMETHODCALLTYPE GetExceptionMode(void);
 
+		bool InCapture();
+
+		template <typename T>
+		T* GetWrapper(T* ptr)
+		{
+			if (ptr != NULL)
+			{
+				auto it = m_BackRefs.find(ptr);
+				if (it != m_BackRefs.end())
+				{
+					it->second->AddRef();
+					return (T*)it->second;
+				}
+			}
+			
+			return NULL;
+		}
+
 	private:
 		ID3D11Device* m_pReal;
 		ID3D11Device* m_pRDCDevice;
 		D3D11ContextDelegate* m_pWrappedContext;
+		std::map<ID3D11DeviceChild*, ID3D11DeviceChild*> m_BackRefs;
 	};
 }
 

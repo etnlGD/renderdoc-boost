@@ -502,7 +502,7 @@ namespace rdclight
 
 
 	private:
-		ID3D11DeviceContext* m_pReal;
+		ID3D11DeviceContext* m_pActive;
 		Serialiser *m_pSerialiser;
 		uint64_t m_ResourceID;
 	};

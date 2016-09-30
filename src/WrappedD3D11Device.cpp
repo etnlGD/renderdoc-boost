@@ -16,7 +16,7 @@ namespace rdclight
 
 		ID3D11DeviceContext* pImmediateContext = NULL;
 		m_pReal->GetImmediateContext(&pImmediateContext);
-		m_pWrappedContext = new D3D11ContextDelegate(&pImmediateContext);
+		m_pWrappedContext = new D3D11ContextDelegate(pImmediateContext, this);
 		pImmediateContext->Release();
 	}
 
@@ -42,6 +42,7 @@ namespace rdclight
 			WrappedD3D11Buffer* wrapped = new WrappedD3D11Buffer(pRealBuffer, this);
 			pRealBuffer->Release();
 			*ppBuffer = wrapped;
+			m_BackRefs[pRealBuffer] = wrapped;
 		}
 		else
 		{
@@ -65,6 +66,7 @@ namespace rdclight
 			WrappedD3D11Texture1D* wrapped = new WrappedD3D11Texture1D(pRealTex1D, this);
 			pRealTex1D->Release();
 			*ppTexture1D = wrapped;
+			m_BackRefs[pRealTex1D] = wrapped;
 		}
 		else
 		{
@@ -88,6 +90,7 @@ namespace rdclight
 			WrappedD3D11Texture2D* wrapped = new WrappedD3D11Texture2D(pRealTex2D, this);
 			pRealTex2D->Release();
 			*ppTexture2D = wrapped;
+			m_BackRefs[pRealTex2D] = wrapped;
 		}
 		else
 		{
@@ -111,6 +114,7 @@ namespace rdclight
 			WrappedD3D11Texture3D* wrapped = new WrappedD3D11Texture3D(pRealTex3D, this);
 			pRealTex3D->Release();
 			*ppTexture3D = wrapped;
+			m_BackRefs[pRealTex3D] = wrapped;
 		}
 		else
 		{
@@ -124,12 +128,9 @@ namespace rdclight
 														 const D3D11_SHADER_RESOURCE_VIEW_DESC *pDesc, 
 														 ID3D11ShaderResourceView **ppSRView)
 	{ // TODO_wzq NOTE: resource should be reconstructed before view.
+		ID3D11Resource* pRealResource = UnwrapSelf(pResource, InCapture());
 		if (ppSRView == NULL)
-			return m_pReal->CreateShaderResourceView(pResource, pDesc, NULL);
-
-		ID3D11Resource* pRealResource = NULL;
-		if (pResource)
-			pResource = (ID3D11Resource*)((WrappedD3D11DeviceChildBase*)pResource)->GetRealDeviceChild();
+			return m_pReal->CreateShaderResourceView(pRealResource, pDesc, NULL);
 
 		ID3D11ShaderResourceView* pRealSRV = NULL;
 		HRESULT ret = m_pReal->CreateShaderResourceView(pRealResource,  pDesc, &pRealSRV);
@@ -139,6 +140,7 @@ namespace rdclight
 				new WrappedD3D11ShaderResourceView(pResource, pRealSRV, this);
 			pRealSRV->Release();
 			*ppSRView = wrapped;
+			m_BackRefs[pRealSRV] = wrapped;
 		}
 		else
 		{
@@ -152,13 +154,11 @@ namespace rdclight
 														  const D3D11_UNORDERED_ACCESS_VIEW_DESC *pDesc, 
 														  ID3D11UnorderedAccessView **ppUAView)
 	{ // TODO_wzq NOTE: resource should be reconstructed before view.
+		ID3D11Resource* pRealResource = UnwrapSelf(pResource, InCapture());
+
 		if (ppUAView == NULL)
-			return m_pReal->CreateUnorderedAccessView(pResource, pDesc, NULL);
-
-		ID3D11Resource* pRealResource = NULL;
-		if (pResource)
-			pResource = (ID3D11Resource*)((WrappedD3D11DeviceChildBase*)pResource)->GetRealDeviceChild();
-
+			return m_pReal->CreateUnorderedAccessView(pRealResource, pDesc, NULL);
+		
 		ID3D11UnorderedAccessView* pRealUAV = NULL;
 		HRESULT ret = m_pReal->CreateUnorderedAccessView(pRealResource, pDesc, &pRealUAV);
 		if (SUCCEEDED(ret) && pRealUAV)
@@ -167,6 +167,7 @@ namespace rdclight
 				new WrappedD3D11UnorderedAccessView(pResource, pRealUAV, this);
 			pRealUAV->Release();
 			*ppUAView = wrapped;
+			m_BackRefs[pRealUAV] = wrapped;
 		}
 		else
 		{
@@ -180,12 +181,9 @@ namespace rdclight
 													   const D3D11_RENDER_TARGET_VIEW_DESC *pDesc, 
 													   ID3D11RenderTargetView **ppRTView)
 	{ // TODO_wzq NOTE: resource should be reconstructed before view.
+		ID3D11Resource* pRealResource = UnwrapSelf(pResource, InCapture());
 		if (ppRTView == NULL)
-			return m_pReal->CreateRenderTargetView(pResource, pDesc, NULL);
-
-		ID3D11Resource* pRealResource = NULL;
-		if (pResource)
-			pResource = (ID3D11Resource*)((WrappedD3D11DeviceChildBase*)pResource)->GetRealDeviceChild();
+			return m_pReal->CreateRenderTargetView(pRealResource, pDesc, NULL);
 
 		ID3D11RenderTargetView* pRealRTV = NULL;
 		HRESULT ret = m_pReal->CreateRenderTargetView(pRealResource, pDesc, &pRealRTV);
@@ -195,6 +193,7 @@ namespace rdclight
 				new WrappedD3D11RenderTargetView(pResource, pRealRTV, this);
 			pRealRTV = NULL;
 			*ppRTView = wrapped;
+			m_BackRefs[pRealRTV] = wrapped;
 		}
 		else
 		{
@@ -208,12 +207,9 @@ namespace rdclight
 													   const D3D11_DEPTH_STENCIL_VIEW_DESC *pDesc, 
 													   ID3D11DepthStencilView **ppDepthStencilView)
 	{ // TODO_wzq NOTE: resource should be reconstructed before view.
+		ID3D11Resource* pRealResource = UnwrapSelf(pResource, InCapture());
 		if (ppDepthStencilView == NULL)
-			return m_pReal->CreateDepthStencilView(pResource, pDesc, NULL);
-
-		ID3D11Resource* pRealResource = NULL;
-		if (pResource)
-			pResource = (ID3D11Resource*)((WrappedD3D11DeviceChildBase*)pResource)->GetRealDeviceChild();
+			return m_pReal->CreateDepthStencilView(pRealResource, pDesc, NULL);
 
 		ID3D11DepthStencilView* pRealDSV = NULL;
 		HRESULT ret = m_pReal->CreateDepthStencilView(pRealResource, pDesc, &pRealDSV);
@@ -223,6 +219,7 @@ namespace rdclight
 				new WrappedD3D11DepthStencilView(pResource, pRealDSV, this);
 			pRealDSV->Release();
 			*ppDepthStencilView = wrapped;
+			m_BackRefs[pRealDSV] = wrapped;
 		}
 		else
 		{
@@ -253,6 +250,7 @@ namespace rdclight
 			WrappedD3D11InputLayout* wrapped = new WrappedD3D11InputLayout(pRealLayout, this);
 			pRealLayout->Release();
 			*ppInputLayout = wrapped;
+			m_BackRefs[pRealLayout] = wrapped;
 		}
 
 		else
@@ -269,17 +267,17 @@ namespace rdclight
 												   ID3D11VertexShader **ppVertexShader)
 	{
 		if (ppVertexShader == NULL)
-			return m_pReal->CreateVertexShader(pShaderBytecode, BytecodeLength, 
-											   pClassLinkage, NULL);
+			return m_pReal->CreateVertexShader(pShaderBytecode, BytecodeLength,  NULL, NULL);
 
 		ID3D11VertexShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateVertexShader(pShaderBytecode, BytecodeLength, 
-												  pClassLinkage, &pRealShader);
+												  NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
 			WrappedD3D11VertexShader* wrapped = new WrappedD3D11VertexShader(pRealShader, this);
 			pRealShader->Release();
 			*ppVertexShader = wrapped;
+			m_BackRefs[pRealShader] = wrapped;
 		}
 		else
 		{
@@ -295,17 +293,17 @@ namespace rdclight
 													 ID3D11GeometryShader **ppGeometryShader)
 	{ // TODO_wzq save parameters to be used in capture phase.
 		if (ppGeometryShader == NULL)
-			return m_pReal->CreateGeometryShader(pShaderBytecode, BytecodeLength,
-												 pClassLinkage, NULL);
+			return m_pReal->CreateGeometryShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
 		ID3D11GeometryShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateGeometryShader(pShaderBytecode, BytecodeLength,
-												    pClassLinkage, &pRealShader);
+												    NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
 			WrappedD3D11GeometryShader* wrapped = new WrappedD3D11GeometryShader(pRealShader, this);
 			pRealShader->Release();
 			*ppGeometryShader = wrapped;
+			m_BackRefs[pRealShader] = wrapped;
 		}
 		else
 		{
@@ -333,17 +331,17 @@ namespace rdclight
 												  ID3D11PixelShader **ppPixelShader)
 	{ // TODO_wzq save parameters to be used in capture phase.
 		if (ppPixelShader == NULL)
-			return m_pReal->CreatePixelShader(pShaderBytecode, BytecodeLength,
-											  pClassLinkage, NULL);
+			return m_pReal->CreatePixelShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
 		ID3D11PixelShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreatePixelShader(pShaderBytecode, BytecodeLength,
-												 pClassLinkage, &pRealShader);
+												 NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
 			WrappedD3D11PixelShader* wrapped = new WrappedD3D11PixelShader(pRealShader, this);
 			pRealShader->Release();
 			*ppPixelShader = wrapped;
+			m_BackRefs[pRealShader] = wrapped;
 		}
 		else
 		{
@@ -359,17 +357,17 @@ namespace rdclight
 												 ID3D11HullShader **ppHullShader)
 	{ // TODO_wzq save parameters to be used in capture phase.
 		if (ppHullShader == NULL)
-			return m_pReal->CreateHullShader(pShaderBytecode, BytecodeLength,
-											 pClassLinkage, NULL);
+			return m_pReal->CreateHullShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
 		ID3D11HullShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateHullShader(pShaderBytecode, BytecodeLength,
-												pClassLinkage, &pRealShader);
+												NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
 			WrappedD3D11HullShader* wrapped = new WrappedD3D11HullShader(pRealShader, this);
 			pRealShader->Release();
 			*ppHullShader = wrapped;
+			m_BackRefs[pRealShader] = wrapped;
 		}
 		else
 		{
@@ -385,17 +383,17 @@ namespace rdclight
 												   ID3D11DomainShader **ppDomainShader)
 	{ // TODO_wzq save parameters to be used in capture phase.
 		if (ppDomainShader == NULL)
-			return m_pReal->CreateDomainShader(pShaderBytecode, BytecodeLength,
-											   pClassLinkage, NULL);
+			return m_pReal->CreateDomainShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
 		ID3D11DomainShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateDomainShader(pShaderBytecode, BytecodeLength,
-												  pClassLinkage, &pRealShader);
+												  NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
 			WrappedD3D11DomainShader* wrapped = new WrappedD3D11DomainShader(pRealShader, this);
 			pRealShader->Release();
 			*ppDomainShader = wrapped;
+			m_BackRefs[pRealShader] = wrapped;
 		}
 		else
 		{
@@ -411,17 +409,17 @@ namespace rdclight
 													ID3D11ComputeShader **ppComputeShader)
 	{ // TODO_wzq save parameters to be used in capture phase.
 		if (ppComputeShader == NULL)
-			return m_pReal->CreateComputeShader(pShaderBytecode, BytecodeLength,
-												pClassLinkage, NULL);
+			return m_pReal->CreateComputeShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
 		ID3D11ComputeShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateComputeShader(pShaderBytecode, BytecodeLength,
-												   pClassLinkage, &pRealShader);
+												   NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
 			WrappedD3D11ComputeShader* wrapped = new WrappedD3D11ComputeShader(pRealShader, this);
 			pRealShader->Release();
 			*ppComputeShader = wrapped;
+			m_BackRefs[pRealShader] = wrapped;
 		}
 		else
 		{
@@ -449,9 +447,20 @@ namespace rdclight
 		HRESULT ret = m_pReal->CreateBlendState(pBlendStateDesc, &pRealState);
 		if (SUCCEEDED(ret) && pRealState)
 		{
-			WrappedD3D11BlendState* wrapped = new WrappedD3D11BlendState(pRealState, this);
+			auto itWrap = m_BackRefs.find(pRealState);
+			if (itWrap != m_BackRefs.end())
+			{
+				itWrap->second->AddRef();
+				*ppBlendState = (ID3D11BlendState*)itWrap->second;
+			}
+			else
+			{
+				WrappedD3D11BlendState* wrapped = new WrappedD3D11BlendState(pRealState, this);
+				*ppBlendState = wrapped;
+				m_BackRefs[pRealState] = wrapped;
+			}
+
 			pRealState->Release();
-			*ppBlendState = wrapped;
 		}
 		else
 		{
@@ -472,9 +481,20 @@ namespace rdclight
 		HRESULT ret = m_pReal->CreateDepthStencilState(pDepthStencilDesc, &pRealState);
 		if (SUCCEEDED(ret) && pRealState)
 		{
-			WrappedD3D11DepthStencilState* wrapped = new WrappedD3D11DepthStencilState(pRealState, this);
+			auto itWrap = m_BackRefs.find(pRealState);
+			if (itWrap != m_BackRefs.end())
+			{
+				itWrap->second->AddRef();
+				*ppDepthStencilState = (ID3D11DepthStencilState*)itWrap->second;
+			}
+			else
+			{
+				WrappedD3D11DepthStencilState* wrapped = new WrappedD3D11DepthStencilState(pRealState, this);
+				*ppDepthStencilState = wrapped;
+				m_BackRefs[pRealState] = wrapped;
+			}
+
 			pRealState->Release();
-			*ppDepthStencilState = wrapped;
 		}
 		else
 		{
@@ -495,9 +515,20 @@ namespace rdclight
 		HRESULT ret = m_pReal->CreateRasterizerState(pRasterizerDesc, &pRealState);
 		if (SUCCEEDED(ret) && pRealState)
 		{
-			WrappedD3D11RasterizerState* wrapped = new WrappedD3D11RasterizerState(pRealState, this);
+			auto itWrap = m_BackRefs.find(pRealState);
+			if (itWrap != m_BackRefs.end())
+			{
+				itWrap->second->AddRef();
+				*ppRasterizerState = (ID3D11RasterizerState*)itWrap->second;
+			}
+			else
+			{
+				WrappedD3D11RasterizerState* wrapped = new WrappedD3D11RasterizerState(pRealState, this);
+				*ppRasterizerState = wrapped;
+				m_BackRefs[pRealState] = wrapped;
+			}
+
 			pRealState->Release();
-			*ppRasterizerState = wrapped;
 		}
 		else
 		{
@@ -517,9 +548,20 @@ namespace rdclight
 		HRESULT ret = m_pReal->CreateSamplerState(pSamplerDesc, &pRealState);
 		if (SUCCEEDED(ret) && pRealState)
 		{
-			WrappedD3D11SamplerState* wrapped = new WrappedD3D11SamplerState(pRealState, this);
+			auto itWrap = m_BackRefs.find(pRealState);
+			if (itWrap != m_BackRefs.end())
+			{
+				itWrap->second->AddRef();
+				*ppSamplerState = (ID3D11SamplerState*)itWrap->second;
+			}
+			else
+			{
+				WrappedD3D11SamplerState* wrapped = new WrappedD3D11SamplerState(pRealState, this);
+				*ppSamplerState = wrapped;
+				m_BackRefs[pRealState] = wrapped;
+			}
+
 			pRealState->Release();
-			*ppSamplerState = wrapped;
 		}
 		else
 		{
@@ -542,6 +584,7 @@ namespace rdclight
 			WrappedD3D11Query* wrapped = new WrappedD3D11Query(pRealQuery, this);
 			pRealQuery->Release();
 			*ppQuery = wrapped;
+			m_BackRefs[pRealQuery] = wrapped;
 		}
 		else
 		{
@@ -564,6 +607,7 @@ namespace rdclight
 			WrappedD3D11Predicate* wrapped = new WrappedD3D11Predicate(pRealPredicate, this);
 			pRealPredicate->Release();
 			*ppPredicate = wrapped;
+			m_BackRefs[pRealPredicate] = wrapped;
 		}
 		else
 		{
@@ -586,6 +630,7 @@ namespace rdclight
 			WrappedD3D11Counter* wrapped = new WrappedD3D11Counter(pRealCounter, this);
 			pRealCounter->Release();
 			*ppCounter = wrapped;
+			m_BackRefs[pRealCounter] = wrapped;
 		}
 		else
 		{
@@ -642,7 +687,8 @@ namespace rdclight
 													void *pFeatureSupportData, 
 													UINT FeatureSupportDataSize)
 	{
-		return m_pReal->CheckFeatureSupport(Feature, pFeatureSupportData, FeatureSupportDataSize);
+		return m_pReal->CheckFeatureSupport(Feature, pFeatureSupportData, 
+											FeatureSupportDataSize);
 	}
 
 	HRESULT WrappedD3D11Device::GetPrivateData(REFGUID guid, UINT *pDataSize, void *pData)

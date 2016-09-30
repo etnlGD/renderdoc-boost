@@ -1,11 +1,15 @@
 #pragma once
 #include <d3d11.h>
+#include "WrappedD3D11DeviceChild.h"
 
 namespace rdclight
 {
-	class D3D11ContextDelegate : public ID3D11DeviceContext
+	class WrappedD3D11Device;
+	class D3D11ContextDelegate : public WrappedD3D11DeviceChild<ID3D11DeviceContext>
 	{
 	public:
+		D3D11ContextDelegate(ID3D11DeviceContext* pRealContext, WrappedD3D11Device* pWrappedDevice);
+
 		virtual void STDMETHODCALLTYPE VSSetConstantBuffers(
 			/* [annotation] */
 			_In_range_(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1)  UINT StartSlot,
@@ -807,7 +811,56 @@ namespace rdclight
 			/* [annotation] */
 			_Out_opt_  ID3D11CommandList **ppCommandList);
 
+		ID3D11DeviceContext* GetActivePtr();
+
 	private:
-		ID3D11DeviceContext* m_pReal;
+		bool InCapture();
+		void SetConstantBuffers_imp(UINT StartSlot, UINT NumBuffers, 
+									ID3D11Buffer *const *ppConstantBuffers,
+									void (STDMETHODCALLTYPE ID3D11DeviceContext::* pfn)(UINT, UINT, ID3D11Buffer*const*));
+
+		void SetShaderResources_imp(UINT StartSlot, UINT NumViews,
+									ID3D11ShaderResourceView *const *ppShaderResourceViews,
+									void (STDMETHODCALLTYPE ID3D11DeviceContext::* pfn)(UINT, UINT, ID3D11ShaderResourceView*const*));
+
+		void SetSamplers_imp(UINT StartSlot, UINT NumSamplers, 
+							 ID3D11SamplerState *const *ppSamplers,
+							 void (STDMETHODCALLTYPE ID3D11DeviceContext::* pfn)(UINT, UINT, ID3D11SamplerState*const*));
+
+		template <typename UnwrappedType>
+		UnwrappedType* Unwrap(UnwrappedType* pWrapped)
+		{
+			return UnwrapSelf(pWrapped, InCapture());
+		}
+
+		template <typename UnwrappedType>
+		UnwrappedType** Unwrap(UINT Num, UnwrappedType* const * pWrappeds, UnwrappedType** pUnwrappeds)
+		{
+			if (pWrappeds == NULL)
+				return NULL;
+
+			for (UINT i = 0; i < Num; ++i)
+			{
+				pUnwrappeds[i] = Unwrap(pWrappeds[i]);
+			}
+			return pUnwrappeds;
+		}
+
+		template <typename UnwrappedType>
+		void Wrap(UnwrappedType** pUnwrappeds, UINT Num = 1)
+		{
+			if (pUnwrappeds == NULL)
+				return;
+
+			for (UINT i = 0; i < Num; ++i)
+			{
+				UnwrappedType* unwrapped = pUnwrappeds[i];
+				if (unwrapped != NULL)
+				{
+					pUnwrappeds[i] = m_pWrappedDevice->GetWrapper(unwrapped);
+					unwrapped->Release();
+				}
+			}
+		}
 	};
 }

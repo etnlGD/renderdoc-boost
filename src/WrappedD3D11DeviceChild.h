@@ -20,11 +20,46 @@ namespace rdclight
 			m_pReal->Release();
 		}
 
-		ID3D11DeviceChild* GetRealDeviceChild() { return m_pReal; }
+		ID3D11DeviceChild* GetRealOrRDCWrappedDeviceChild(bool rdcWrapped) 
+		{
+			if (rdcWrapped)
+			{
+				if (m_pRDCWrapped == NULL)
+				{
+					// TODO_wzq reconstruct.
+				}
+				return m_pRDCWrapped;
+			}
+			else
+			{
+				if (m_pReal == NULL)
+				{
+					// TODO_wzq reconstruct.
+				}
+				return m_pReal;
+			}
+		}
 
 	protected:
 		ID3D11DeviceChild* m_pReal;
+		ID3D11DeviceChild* m_pRDCWrapped;
 	};
+
+	template <typename UnwrapType>
+	UnwrapType* UnwrapDeviceChild(ID3D11DeviceChild* pWrapped, bool rdcWrapped)
+	{
+		if (pWrapped == NULL)
+			return NULL;
+
+		WrappedD3D11DeviceChildBase* base = (WrappedD3D11DeviceChildBase*)pWrapped;
+		return (UnwrapType*) base->GetRealOrRDCWrappedDeviceChild(rdcWrapped);
+	}
+
+	template <typename UnwrapType>
+	UnwrapType* UnwrapSelf(UnwrapType* pWrapped, bool rdcWrapped)
+	{
+		return UnwrapDeviceChild<UnwrapType>(pWrapped, rdcWrapped);
+	}
 
 	template <typename NestedType>
 	class WrappedD3D11DeviceChild : public NestedType, public WrappedD3D11DeviceChildBase
@@ -89,8 +124,12 @@ namespace rdclight
 
 		NestedType* GetReal() { return (NestedType*) m_pReal; }
 
+		NestedType* GetRealOrRDCWrapped(bool rdcWrapped);
+
 	private:
 		unsigned int m_Ref;
+
+	protected:
 		WrappedD3D11Device* m_pWrappedDevice;
 	};
 }
