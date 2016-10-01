@@ -55,6 +55,46 @@ namespace rdclight
 
 			return WrappedD3D11DeviceChild::QueryInterface(riid, ppvObject);
 		}
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice)
+		{
+			template <typename T>
+			struct Traits
+			{
+				static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc);
+			};
+
+			template <>
+			struct Traits<ID3D11Query>
+			{
+				static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc)
+				{
+					ID3D11Query* pNewPredicate = NULL;
+					if (FAILED(pNewDevice->CreateQuery(desc, &pNewPredicate)))
+						LogError("CreateQuery failed when CopyToDevice");
+
+					return pNewPredicate;
+				}
+			};
+
+			template <>
+			struct Traits<ID3D11Predicate>
+			{
+				static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc)
+				{
+					ID3D11Predicate* pNewPredicate = NULL;
+					if (FAILED(pNewDevice->CreatePredicate(desc, &pNewPredicate)))
+						LogError("CreateQuery failed when CopyToDevice");
+
+					return pNewPredicate;
+				}
+			};
+
+			D3D11_QUERY_DESC desc;
+			GetReal()->GetDesc(&desc);
+			return Traits<NestedType>::copyImp(pNewDevice, &desc);
+		}
 	};
 
 	class WrappedD3D11Counter : public WrappedD3D11Async<ID3D11Counter>
@@ -62,6 +102,9 @@ namespace rdclight
 	public:
 		WrappedD3D11Counter(ID3D11Counter* pReal, WrappedD3D11Device* pDevice);
 		virtual void STDMETHODCALLTYPE GetDesc(D3D11_COUNTER_DESC *pDesc);
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 	};
 
 	typedef WrappedD3D11QueryBase<ID3D11Query> WrappedD3D11Query;

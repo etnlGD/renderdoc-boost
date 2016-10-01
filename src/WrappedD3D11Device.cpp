@@ -5,6 +5,8 @@
 #include "D3D11ContextDelegate.h"
 #include "WrappedD3D11Shader.h"
 #include "WrappedD3D11Async.h"
+#include <assert.h>
+#include "Log.h"
 
 namespace rdclight
 {
@@ -266,6 +268,9 @@ namespace rdclight
 												   ID3D11ClassLinkage *pClassLinkage, 
 												   ID3D11VertexShader **ppVertexShader)
 	{
+		if (pClassLinkage != NULL)
+			LogError("Class linkage is not supported by now");
+
 		if (ppVertexShader == NULL)
 			return m_pReal->CreateVertexShader(pShaderBytecode, BytecodeLength,  NULL, NULL);
 
@@ -274,7 +279,9 @@ namespace rdclight
 												  NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
-			WrappedD3D11VertexShader* wrapped = new WrappedD3D11VertexShader(pRealShader, this);
+			WrappedD3D11VertexShader* wrapped = 
+				new WrappedD3D11VertexShader(pShaderBytecode, BytecodeLength, pRealShader, this);
+
 			pRealShader->Release();
 			*ppVertexShader = wrapped;
 			m_BackRefs[pRealShader] = wrapped;
@@ -292,6 +299,9 @@ namespace rdclight
 													 ID3D11ClassLinkage *pClassLinkage, 
 													 ID3D11GeometryShader **ppGeometryShader)
 	{ // TODO_wzq save parameters to be used in capture phase.
+		if (pClassLinkage != NULL)
+			LogError("Class linkage is not supported by now");
+
 		if (ppGeometryShader == NULL)
 			return m_pReal->CreateGeometryShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
@@ -300,7 +310,9 @@ namespace rdclight
 												    NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
-			WrappedD3D11GeometryShader* wrapped = new WrappedD3D11GeometryShader(pRealShader, this);
+			WrappedD3D11GeometryShader* wrapped = 
+				new WrappedD3D11GeometryShader(pShaderBytecode, BytecodeLength, pRealShader, this);
+
 			pRealShader->Release();
 			*ppGeometryShader = wrapped;
 			m_BackRefs[pRealShader] = wrapped;
@@ -330,6 +342,9 @@ namespace rdclight
 												  ID3D11ClassLinkage *pClassLinkage, 
 												  ID3D11PixelShader **ppPixelShader)
 	{ // TODO_wzq save parameters to be used in capture phase.
+		if (pClassLinkage != NULL)
+			LogError("Class linkage is not supported by now");
+
 		if (ppPixelShader == NULL)
 			return m_pReal->CreatePixelShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
@@ -338,7 +353,9 @@ namespace rdclight
 												 NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
-			WrappedD3D11PixelShader* wrapped = new WrappedD3D11PixelShader(pRealShader, this);
+			WrappedD3D11PixelShader* wrapped = 
+				new WrappedD3D11PixelShader(pShaderBytecode, BytecodeLength, pRealShader, this);
+
 			pRealShader->Release();
 			*ppPixelShader = wrapped;
 			m_BackRefs[pRealShader] = wrapped;
@@ -356,6 +373,9 @@ namespace rdclight
 												 ID3D11ClassLinkage *pClassLinkage, 
 												 ID3D11HullShader **ppHullShader)
 	{ // TODO_wzq save parameters to be used in capture phase.
+		if (pClassLinkage != NULL)
+			LogError("Class linkage is not supported by now");
+
 		if (ppHullShader == NULL)
 			return m_pReal->CreateHullShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
@@ -364,7 +384,8 @@ namespace rdclight
 												NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
-			WrappedD3D11HullShader* wrapped = new WrappedD3D11HullShader(pRealShader, this);
+			WrappedD3D11HullShader* wrapped = 
+				new WrappedD3D11HullShader(pShaderBytecode, BytecodeLength, pRealShader, this);
 			pRealShader->Release();
 			*ppHullShader = wrapped;
 			m_BackRefs[pRealShader] = wrapped;
@@ -382,6 +403,9 @@ namespace rdclight
 												   ID3D11ClassLinkage *pClassLinkage, 
 												   ID3D11DomainShader **ppDomainShader)
 	{ // TODO_wzq save parameters to be used in capture phase.
+		if (pClassLinkage != NULL)
+			LogError("Class linkage is not supported by now");
+
 		if (ppDomainShader == NULL)
 			return m_pReal->CreateDomainShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
@@ -390,7 +414,8 @@ namespace rdclight
 												  NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
-			WrappedD3D11DomainShader* wrapped = new WrappedD3D11DomainShader(pRealShader, this);
+			WrappedD3D11DomainShader* wrapped = 
+				new WrappedD3D11DomainShader(pShaderBytecode, BytecodeLength, pRealShader, this);
 			pRealShader->Release();
 			*ppDomainShader = wrapped;
 			m_BackRefs[pRealShader] = wrapped;
@@ -408,6 +433,9 @@ namespace rdclight
 													ID3D11ClassLinkage *pClassLinkage, 
 													ID3D11ComputeShader **ppComputeShader)
 	{ // TODO_wzq save parameters to be used in capture phase.
+		if (pClassLinkage != NULL)
+			LogError("Class linkage is not supported by now");
+
 		if (ppComputeShader == NULL)
 			return m_pReal->CreateComputeShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
@@ -416,7 +444,8 @@ namespace rdclight
 												   NULL, &pRealShader);
 		if (SUCCEEDED(ret) && pRealShader)
 		{
-			WrappedD3D11ComputeShader* wrapped = new WrappedD3D11ComputeShader(pRealShader, this);
+			WrappedD3D11ComputeShader* wrapped = 
+				new WrappedD3D11ComputeShader(pShaderBytecode, BytecodeLength, pRealShader, this);
 			pRealShader->Release();
 			*ppComputeShader = wrapped;
 			m_BackRefs[pRealShader] = wrapped;
@@ -738,6 +767,16 @@ namespace rdclight
 	UINT WrappedD3D11Device::GetExceptionMode(void)
 	{
 		return m_pReal->GetExceptionMode();
+	}
+
+	void WrappedD3D11Device::OnDeviceChildReplaced(ID3D11DeviceChild* pOld, 
+												   ID3D11DeviceChild* pNew)
+	{
+		auto it = m_BackRefs.find(pOld);
+		assert(it != m_BackRefs.end());
+		assert(pNew != NULL);
+		m_BackRefs[pNew] = it->second;
+		m_BackRefs.erase(it);
 	}
 
 }

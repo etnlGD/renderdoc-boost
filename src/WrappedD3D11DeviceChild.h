@@ -9,9 +9,10 @@ namespace rdclight
 	class WrappedD3D11DeviceChildBase
 	{
 	public:
-		WrappedD3D11DeviceChildBase(ID3D11DeviceChild* pReal) :
-			m_pReal(pReal)
+		WrappedD3D11DeviceChildBase(ID3D11DeviceChild* pReal, WrappedD3D11Device* pDevice) :
+			m_pReal(pReal), m_pWrappedDevice(pDevice)
 		{
+			m_pRealDevice = m_pWrappedDevice->GetReal();
 			m_pReal->AddRef();
 		}
 
@@ -22,27 +23,37 @@ namespace rdclight
 
 		ID3D11DeviceChild* GetRealOrRDCWrappedDeviceChild(bool rdcWrapped) 
 		{
-			if (rdcWrapped)
-			{
-				if (m_pRDCWrapped == NULL)
-				{
-					// TODO_wzq reconstruct.
-				}
-				return m_pRDCWrapped;
-			}
-			else
-			{
-				if (m_pReal == NULL)
-				{
-					// TODO_wzq reconstruct.
-				}
-				return m_pReal;
-			}
+			return m_pReal;
+		}
+
+		void SwitchToDevice(ID3D11Device* pNewDevice)
+		{
+			if (m_pRealDevice == pNewDevice)
+				return;
+
+			ID3D11DeviceChild* pCopied = CopyToDevice(pNewDevice);
+			m_pWrappedDevice->OnDeviceChildReplaced(m_pReal, pCopied);
+			m_pReal->Release();
+			m_pReal = pCopied;
+			m_pRealDevice = pNewDevice;
+		}
+
+		ID3D11Device* GetRealDevice() { return m_pRealDevice; }
+
+		ID3D11DeviceChild* GetRealDeviceChild()
+		{
+			return m_pReal;
 		}
 
 	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice) = 0;
+
+	protected:
+		WrappedD3D11Device* const m_pWrappedDevice;
 		ID3D11DeviceChild* m_pReal;
-		ID3D11DeviceChild* m_pRDCWrapped;
+
+	private:
+		ID3D11Device* m_pRealDevice;
 	};
 
 	template <typename UnwrapType>
@@ -66,7 +77,7 @@ namespace rdclight
 	{
 	public:
 		WrappedD3D11DeviceChild(NestedType* pReal, WrappedD3D11Device* pDevice) :
-			WrappedD3D11DeviceChildBase(pReal), m_Ref(1), m_pWrappedDevice(pDevice)
+			WrappedD3D11DeviceChildBase(pReal, pDevice), m_Ref(1)
 		{
 		}
 
@@ -128,9 +139,6 @@ namespace rdclight
 
 	private:
 		unsigned int m_Ref;
-
-	protected:
-		WrappedD3D11Device* m_pWrappedDevice;
 	};
 }
 

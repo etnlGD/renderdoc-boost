@@ -25,6 +25,7 @@ namespace rdclight
 			if (ppResource)
 			{
 				*ppResource = m_pWrappedResource;
+				m_pWrappedResource->AddRef();
 			}
 		}
 
@@ -40,7 +41,7 @@ namespace rdclight
 			return WrappedD3D11DeviceChild::QueryInterface(riid, ppvObject);
 		}
 
-	private:
+	protected:
 		ID3D11Resource* m_pWrappedResource;
 	};
 
@@ -51,6 +52,9 @@ namespace rdclight
 									 ID3D11DepthStencilView* pReal, WrappedD3D11Device* pDevice);
 
 		virtual void STDMETHODCALLTYPE GetDesc(D3D11_DEPTH_STENCIL_VIEW_DESC *pDesc);
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 	};
 
 	class WrappedD3D11RenderTargetView : public WrappedD3D11View<ID3D11RenderTargetView>
@@ -60,6 +64,9 @@ namespace rdclight
 									 ID3D11RenderTargetView* pReal, WrappedD3D11Device* pDevice);
 
 		virtual void STDMETHODCALLTYPE GetDesc(D3D11_RENDER_TARGET_VIEW_DESC *pDesc);
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 	};
 
 	class WrappedD3D11ShaderResourceView : public WrappedD3D11View<ID3D11ShaderResourceView>
@@ -69,6 +76,9 @@ namespace rdclight
 									   ID3D11ShaderResourceView* pReal, WrappedD3D11Device* pDevice);
 
 		virtual void STDMETHODCALLTYPE GetDesc(D3D11_SHADER_RESOURCE_VIEW_DESC *pDesc);
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 	};
 
 	class WrappedD3D11UnorderedAccessView : public WrappedD3D11View<ID3D11UnorderedAccessView>
@@ -78,6 +88,9 @@ namespace rdclight
 										ID3D11UnorderedAccessView* pReal, WrappedD3D11Device* pDevice);
 
 		virtual void STDMETHODCALLTYPE GetDesc(D3D11_UNORDERED_ACCESS_VIEW_DESC *pDesc);
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 	};
 
 }

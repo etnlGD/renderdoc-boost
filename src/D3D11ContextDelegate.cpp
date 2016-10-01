@@ -3,6 +3,7 @@
 #include "WrappedD3D11View.h"
 #include "WrappedD3D11State.h"
 #include "WrappedD3D11Shader.h"
+#include "Log.h"
 
 namespace rdclight
 {
@@ -765,4 +766,22 @@ namespace rdclight
 	{
 		return GetActivePtr()->FinishCommandList(RestoreDeferredContextState, ppCommandList);
 	}
+
+	ID3D11DeviceChild* D3D11ContextDelegate::CopyToDevice(ID3D11Device* pNewDevice)
+	{
+		if (GetReal()->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE)
+		{
+			ID3D11DeviceContext* pNewImmediateContext = NULL;
+			pNewDevice->GetImmediateContext(&pNewImmediateContext);
+			// TODO_wzq copy pipeline state to new immediate context.
+
+			return pNewImmediateContext;
+		}
+		else
+		{
+			LogError("Deferred context is not supported by now");
+			return NULL;
+		}
+	}
+
 }

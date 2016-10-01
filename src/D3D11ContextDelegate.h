@@ -813,6 +813,10 @@ namespace rdclight
 
 		ID3D11DeviceContext* GetActivePtr();
 
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
+
 	private:
 		bool InCapture();
 		void SetConstantBuffers_imp(UINT StartSlot, UINT NumBuffers, 

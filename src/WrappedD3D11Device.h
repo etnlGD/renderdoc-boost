@@ -308,6 +308,12 @@ namespace rdclight
 
 		virtual UINT STDMETHODCALLTYPE GetExceptionMode(void);
 
+
+	public:
+		ID3D11Device* GetReal() { return m_pReal; }
+
+		void OnDeviceChildReplaced(ID3D11DeviceChild* pOld, ID3D11DeviceChild* pNew);
+		
 		bool InCapture();
 
 		template <typename T>

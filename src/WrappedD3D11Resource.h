@@ -43,6 +43,9 @@ namespace rdclight
 	public:
 		WrappedD3D11Buffer(ID3D11Buffer* pReal, WrappedD3D11Device* pDevice);
 		virtual void STDMETHODCALLTYPE GetDesc(D3D11_BUFFER_DESC *pDesc);
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 	};
 
 	class WrappedD3D11Texture1D : public WrappedD3D11Resource<ID3D11Texture1D>
@@ -50,6 +53,9 @@ namespace rdclight
 	public:
 		WrappedD3D11Texture1D(ID3D11Texture1D* pReal, WrappedD3D11Device* pDevice);
 		virtual void STDMETHODCALLTYPE GetDesc(D3D11_TEXTURE1D_DESC *pDesc);
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 	};
 
 	class WrappedD3D11Texture2D : public WrappedD3D11Resource<ID3D11Texture2D>
@@ -57,6 +63,9 @@ namespace rdclight
 	public:
 		WrappedD3D11Texture2D(ID3D11Texture2D* pReal, WrappedD3D11Device* pDevice);
 		virtual void STDMETHODCALLTYPE GetDesc(D3D11_TEXTURE2D_DESC *pDesc);
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 	};
 
 	class WrappedD3D11Texture3D : public WrappedD3D11Resource<ID3D11Texture3D>
@@ -64,6 +73,9 @@ namespace rdclight
 	public:
 		WrappedD3D11Texture3D(ID3D11Texture3D* pReal, WrappedD3D11Device* pDevice);
 		virtual void STDMETHODCALLTYPE GetDesc(D3D11_TEXTURE3D_DESC *pDesc);
+
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 	};
 }
 
