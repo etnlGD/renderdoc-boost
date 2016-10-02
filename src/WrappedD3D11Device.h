@@ -2,9 +2,9 @@
 #include <d3d11.h>
 #include <map>
 
-namespace rdclight
+namespace rdcboost
 {
-	class D3D11ContextDelegate;
+	class WrappedD3D11Context;
 	class WrappedD3D11Device : public ID3D11Device
 	{
 	public:
@@ -310,10 +310,10 @@ namespace rdclight
 
 
 	public:
+		void SwitchToDevice(ID3D11Device* pNewDevice);
+
 		ID3D11Device* GetReal() { return m_pReal; }
 
-		void OnDeviceChildReplaced(ID3D11DeviceChild* pOld, ID3D11DeviceChild* pNew);
-		
 		bool InCapture();
 
 		template <typename T>
@@ -335,8 +335,9 @@ namespace rdclight
 	private:
 		ID3D11Device* m_pReal;
 		ID3D11Device* m_pRDCDevice;
-		D3D11ContextDelegate* m_pWrappedContext;
-		std::map<ID3D11DeviceChild*, ID3D11DeviceChild*> m_BackRefs;
+		WrappedD3D11Context* m_pWrappedContext;
+		std::map<ID3D11DeviceChild*, WrappedD3D11DeviceChildBase*> m_BackRefs;
+		PrivateDataMap m_PrivateDatas;
 	};
 }
 

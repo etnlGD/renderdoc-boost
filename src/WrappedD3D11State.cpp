@@ -1,7 +1,7 @@
 #include "WrappedD3D11State.h"
 #include "Log.h"
 
-namespace rdclight
+namespace rdcboost
 {
 
 	WrappedD3D11BlendState::WrappedD3D11BlendState(ID3D11BlendState* pReal, WrappedD3D11Device* pDevice) :

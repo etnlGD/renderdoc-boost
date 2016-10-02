@@ -2,13 +2,13 @@
 #include <d3d11.h>
 #include "WrappedD3D11DeviceChild.h"
 
-namespace rdclight
+namespace rdcboost
 {
 	class WrappedD3D11Device;
-	class D3D11ContextDelegate : public WrappedD3D11DeviceChild<ID3D11DeviceContext>
+	class WrappedD3D11Context : public WrappedD3D11DeviceChild<ID3D11DeviceContext>
 	{
 	public:
-		D3D11ContextDelegate(ID3D11DeviceContext* pRealContext, WrappedD3D11Device* pWrappedDevice);
+		WrappedD3D11Context(ID3D11DeviceContext* pRealContext, WrappedD3D11Device* pWrappedDevice);
 
 		virtual void STDMETHODCALLTYPE VSSetConstantBuffers(
 			/* [annotation] */
@@ -813,6 +813,10 @@ namespace rdclight
 
 		ID3D11DeviceContext* GetActivePtr();
 
+	public:
+		void SaveState(SDeviceContextState* pState);
+		void RestoreState(const SDeviceContextState* pState);
+
 
 	protected:
 		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
@@ -866,5 +870,8 @@ namespace rdclight
 				}
 			}
 		}
+
+	private:
+		UINT m_SOOffsets[D3D11_SO_BUFFER_SLOT_COUNT];
 	};
 }

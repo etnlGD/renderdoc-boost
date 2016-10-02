@@ -1,11 +1,11 @@
 #pragma once
-#include "D3D11ContextDelegate.h"
+#include "WrappedD3D11Context.h"
 #include <stdint.h>
 
 class Serialiser;
-namespace rdclight
+namespace rdcboost
 {
-	class D3D11ContextRecorder : public D3D11ContextDelegate
+	class D3D11ContextRecorder : public WrappedD3D11Context
 	{
 	public:
 		virtual void STDMETHODCALLTYPE VSSetConstantBuffers(

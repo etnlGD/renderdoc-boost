@@ -2,7 +2,7 @@
 #include <d3d11.h>
 #include "WrappedD3D11DeviceChild.h"
 
-namespace rdclight
+namespace rdcboost
 {
 	template <typename NestedType>
 	class WrappedD3D11Resource : public WrappedD3D11DeviceChild<NestedType>

@@ -1,7 +1,7 @@
 #include "WrappedD3D11Async.h"
 #include "Log.h"
 
-namespace rdclight
+namespace rdcboost
 {
 
 	WrappedD3D11Counter::WrappedD3D11Counter(ID3D11Counter* pReal, WrappedD3D11Device* pDevice) :

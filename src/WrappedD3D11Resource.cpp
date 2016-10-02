@@ -1,7 +1,7 @@
 #include "WrappedD3D11Resource.h"
 #include "Log.h"
 
-namespace rdclight
+namespace rdcboost
 {
 	template <typename TDesc, typename TRes, typename Traits>
 	inline static TRes* CopyResource(

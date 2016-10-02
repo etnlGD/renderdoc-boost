@@ -1,21 +1,23 @@
-#include "D3D11ContextDelegate.h"
+#include "WrappedD3D11Context.h"
 #include "WrappedD3D11Resource.h"
 #include "WrappedD3D11View.h"
 #include "WrappedD3D11State.h"
 #include "WrappedD3D11Shader.h"
 #include "Log.h"
+#include "DeviceContextState.h"
 
-namespace rdclight
+namespace rdcboost
 {
 
-	D3D11ContextDelegate::D3D11ContextDelegate(
+	WrappedD3D11Context::WrappedD3D11Context(
 		ID3D11DeviceContext* pRealContext, WrappedD3D11Device* pWrappedDevice) :
 		WrappedD3D11DeviceChild(pRealContext, pWrappedDevice)
 	{
+		memset(m_SOOffsets, 0, sizeof(m_SOOffsets));
 	}
 
 #pragma region SetConstantBuffers
-	void D3D11ContextDelegate::SetConstantBuffers_imp(
+	void WrappedD3D11Context::SetConstantBuffers_imp(
 		UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers, 
 		void (STDMETHODCALLTYPE ID3D11DeviceContext::* pfn)(UINT, UINT, ID3D11Buffer*const*))
 	{
@@ -24,37 +26,37 @@ namespace rdclight
 							   Unwrap(NumBuffers, ppConstantBuffers, pUnwrapped));
 	}
 
-	void D3D11ContextDelegate::VSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
+	void WrappedD3D11Context::VSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
 	{
 		SetConstantBuffers_imp(StartSlot, NumBuffers, ppConstantBuffers,
 							   &ID3D11DeviceContext::VSSetConstantBuffers);
 	}
 
-	void D3D11ContextDelegate::HSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
+	void WrappedD3D11Context::HSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
 	{
 		SetConstantBuffers_imp(StartSlot, NumBuffers, ppConstantBuffers,
 							   &ID3D11DeviceContext::HSSetConstantBuffers);
 	}
 
-	void D3D11ContextDelegate::DSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
+	void WrappedD3D11Context::DSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
 	{
 		SetConstantBuffers_imp(StartSlot, NumBuffers, ppConstantBuffers,
 							   &ID3D11DeviceContext::DSSetConstantBuffers);
 	}
 
-	void D3D11ContextDelegate::GSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
+	void WrappedD3D11Context::GSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
 	{
 		SetConstantBuffers_imp(StartSlot, NumBuffers, ppConstantBuffers,
 							   &ID3D11DeviceContext::GSSetConstantBuffers);
 	}
 
-	void D3D11ContextDelegate::PSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
+	void WrappedD3D11Context::PSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
 	{
 		SetConstantBuffers_imp(StartSlot, NumBuffers, ppConstantBuffers,
 							   &ID3D11DeviceContext::PSSetConstantBuffers);
 	}
 
-	void D3D11ContextDelegate::CSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
+	void WrappedD3D11Context::CSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
 	{
 		SetConstantBuffers_imp(StartSlot, NumBuffers, ppConstantBuffers,
 							   &ID3D11DeviceContext::CSSetConstantBuffers);
@@ -63,7 +65,7 @@ namespace rdclight
 
 
 #pragma region SetShaderResources
-	void D3D11ContextDelegate::SetShaderResources_imp(
+	void WrappedD3D11Context::SetShaderResources_imp(
 		UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews, 
 		void (STDMETHODCALLTYPE ID3D11DeviceContext::* pfn)(UINT, UINT, ID3D11ShaderResourceView*const*))
 	{
@@ -72,37 +74,37 @@ namespace rdclight
 								Unwrap(NumViews, ppShaderResourceViews, pUnwrapped));
 	}
 
-	void D3D11ContextDelegate::VSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
+	void WrappedD3D11Context::VSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
 	{
 		SetShaderResources_imp(StartSlot, NumViews, ppShaderResourceViews,
 							   &ID3D11DeviceContext::VSSetShaderResources);
 	}
 
-	void D3D11ContextDelegate::HSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
+	void WrappedD3D11Context::HSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
 	{
 		SetShaderResources_imp(StartSlot, NumViews, ppShaderResourceViews,
 							   &ID3D11DeviceContext::HSSetShaderResources);
 	}
 
-	void D3D11ContextDelegate::DSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
+	void WrappedD3D11Context::DSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
 	{
 		SetShaderResources_imp(StartSlot, NumViews, ppShaderResourceViews,
 							   &ID3D11DeviceContext::DSSetShaderResources);
 	}
 
-	void D3D11ContextDelegate::GSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
+	void WrappedD3D11Context::GSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
 	{
 		SetShaderResources_imp(StartSlot, NumViews, ppShaderResourceViews,
 							   &ID3D11DeviceContext::GSSetShaderResources);
 	}
 
-	void D3D11ContextDelegate::PSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
+	void WrappedD3D11Context::PSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
 	{
 		SetShaderResources_imp(StartSlot, NumViews, ppShaderResourceViews,
 							   &ID3D11DeviceContext::PSSetShaderResources);
 	}
 
-	void D3D11ContextDelegate::CSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
+	void WrappedD3D11Context::CSSetShaderResources(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView *const *ppShaderResourceViews)
 	{
 		SetShaderResources_imp(StartSlot, NumViews, ppShaderResourceViews,
 							   &ID3D11DeviceContext::CSSetShaderResources);
@@ -111,41 +113,41 @@ namespace rdclight
 
 
 #pragma region SetSamplers
-	void D3D11ContextDelegate::SetSamplers_imp(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers, void (STDMETHODCALLTYPE ID3D11DeviceContext::* pfn)(UINT, UINT, ID3D11SamplerState*const*))
+	void WrappedD3D11Context::SetSamplers_imp(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers, void (STDMETHODCALLTYPE ID3D11DeviceContext::* pfn)(UINT, UINT, ID3D11SamplerState*const*))
 	{
 		ID3D11SamplerState* pUnwrapped[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT];
 		(GetActivePtr()->*pfn)(StartSlot, NumSamplers,
 								Unwrap(NumSamplers, ppSamplers, pUnwrapped));
 	}
 
-	void D3D11ContextDelegate::VSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
+	void WrappedD3D11Context::VSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
 	{
-		GetActivePtr()->VSSetSamplers(StartSlot, NumSamplers, ppSamplers);
+		SetSamplers_imp(StartSlot, NumSamplers, ppSamplers, &ID3D11DeviceContext::VSSetSamplers);
 	}
 
-	void D3D11ContextDelegate::HSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
+	void WrappedD3D11Context::HSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
 	{
-		GetActivePtr()->HSSetSamplers(StartSlot, NumSamplers, ppSamplers);
+		SetSamplers_imp(StartSlot, NumSamplers, ppSamplers, &ID3D11DeviceContext::HSSetSamplers);
 	}
 
-	void D3D11ContextDelegate::DSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
+	void WrappedD3D11Context::DSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
 	{
-		GetActivePtr()->DSSetSamplers(StartSlot, NumSamplers, ppSamplers);
+		SetSamplers_imp(StartSlot, NumSamplers, ppSamplers, &ID3D11DeviceContext::DSSetSamplers);
 	}
 
-	void D3D11ContextDelegate::GSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
+	void WrappedD3D11Context::GSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
 	{
-		GetActivePtr()->GSSetSamplers(StartSlot, NumSamplers, ppSamplers);
+		SetSamplers_imp(StartSlot, NumSamplers, ppSamplers, &ID3D11DeviceContext::GSSetSamplers);
 	}
 
-	void D3D11ContextDelegate::PSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
+	void WrappedD3D11Context::PSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
 	{
-		GetActivePtr()->PSSetSamplers(StartSlot, NumSamplers, ppSamplers);
+		SetSamplers_imp(StartSlot, NumSamplers, ppSamplers, &ID3D11DeviceContext::PSSetSamplers);
 	}
 
-	void D3D11ContextDelegate::CSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
+	void WrappedD3D11Context::CSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState *const *ppSamplers)
 	{
-		GetActivePtr()->CSSetSamplers(StartSlot, NumSamplers, ppSamplers);
+		SetSamplers_imp(StartSlot, NumSamplers, ppSamplers, &ID3D11DeviceContext::CSSetSamplers);
 	}
 #pragma endregion SetSamplers
 
@@ -167,37 +169,37 @@ namespace rdclight
 		}
 	}
 
-	void D3D11ContextDelegate::VSSetShader(ID3D11VertexShader *pVertexShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
+	void WrappedD3D11Context::VSSetShader(ID3D11VertexShader *pVertexShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
 		SetShader_imp<WrappedD3D11VertexShader>(GetActivePtr(), pVertexShader, InCapture(),
 												&ID3D11DeviceContext::VSSetShader);
 	}
 
-	void D3D11ContextDelegate::HSSetShader(ID3D11HullShader *pHullShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
+	void WrappedD3D11Context::HSSetShader(ID3D11HullShader *pHullShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
 		SetShader_imp<WrappedD3D11HullShader>(GetActivePtr(), pHullShader, InCapture(),
 												&ID3D11DeviceContext::HSSetShader);
 	}
 
-	void D3D11ContextDelegate::DSSetShader(ID3D11DomainShader *pDomainShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
+	void WrappedD3D11Context::DSSetShader(ID3D11DomainShader *pDomainShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
 		SetShader_imp<WrappedD3D11DomainShader>(GetActivePtr(), pDomainShader, InCapture(),
 												&ID3D11DeviceContext::DSSetShader);
 	}
 
-	void D3D11ContextDelegate::GSSetShader(ID3D11GeometryShader *pShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
+	void WrappedD3D11Context::GSSetShader(ID3D11GeometryShader *pShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
 		SetShader_imp<WrappedD3D11GeometryShader>(GetActivePtr(), pShader, InCapture(),
 												&ID3D11DeviceContext::GSSetShader);
 	}
 
-	void D3D11ContextDelegate::PSSetShader(ID3D11PixelShader *pPixelShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
+	void WrappedD3D11Context::PSSetShader(ID3D11PixelShader *pPixelShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
 		SetShader_imp<WrappedD3D11PixelShader>(GetActivePtr(), pPixelShader, InCapture(),
 												&ID3D11DeviceContext::PSSetShader);
 	}
 
-	void D3D11ContextDelegate::CSSetShader(ID3D11ComputeShader *pComputeShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
+	void WrappedD3D11Context::CSSetShader(ID3D11ComputeShader *pComputeShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
 		SetShader_imp<WrappedD3D11ComputeShader>(GetActivePtr(), pComputeShader, InCapture(),
 												&ID3D11DeviceContext::CSSetShader);
@@ -205,35 +207,82 @@ namespace rdclight
 #pragma endregion SetShader
 
 
-	void D3D11ContextDelegate::DrawIndexed(UINT IndexCount, UINT StartIndexLocation, 
+	void WrappedD3D11Context::DrawIndexed(UINT IndexCount, UINT StartIndexLocation, 
 										   INT BaseVertexLocation)
 	{
 		GetActivePtr()->DrawIndexed(IndexCount, StartIndexLocation, BaseVertexLocation);
 	}
 
-	void D3D11ContextDelegate::Draw(UINT VertexCount, UINT StartVertexLocation)
+	void WrappedD3D11Context::Draw(UINT VertexCount, UINT StartVertexLocation)
 	{
 		GetActivePtr()->Draw(VertexCount, StartVertexLocation);
 	}
 
-	HRESULT D3D11ContextDelegate::Map(ID3D11Resource *pResource, UINT Subresource, 
-									  D3D11_MAP MapType, UINT MapFlags, 
-									  D3D11_MAPPED_SUBRESOURCE *pMappedResource)
+	void WrappedD3D11Context::DrawIndexedInstanced(
+		UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation,
+		INT BaseVertexLocation, UINT StartInstanceLocation)
 	{
-		return GetActivePtr()->Map(Unwrap(pResource), Subresource, MapType, MapFlags, pMappedResource);
+		GetActivePtr()->DrawIndexedInstanced(IndexCountPerInstance, InstanceCount,
+											 StartIndexLocation, BaseVertexLocation,
+											 StartInstanceLocation);
 	}
 
-	void D3D11ContextDelegate::Unmap(ID3D11Resource *pResource, UINT Subresource)
+	void WrappedD3D11Context::DrawInstanced(UINT VertexCountPerInstance, UINT InstanceCount,
+											UINT StartVertexLocation,
+											UINT StartInstanceLocation)
+	{
+		GetActivePtr()->DrawInstanced(VertexCountPerInstance, InstanceCount,
+									  StartVertexLocation, StartInstanceLocation);
+	}
+
+	void WrappedD3D11Context::DrawAuto()
+	{
+		GetActivePtr()->DrawAuto();
+	}
+
+	void WrappedD3D11Context::DrawIndexedInstancedIndirect(
+		ID3D11Buffer *pBufferForArgs, UINT AlignedByteOffsetForArgs)
+	{
+		GetActivePtr()->DrawIndexedInstancedIndirect(Unwrap(pBufferForArgs), AlignedByteOffsetForArgs);
+	}
+
+	void WrappedD3D11Context::DrawInstancedIndirect(ID3D11Buffer *pBufferForArgs,
+													UINT AlignedByteOffsetForArgs)
+	{
+		GetActivePtr()->DrawInstancedIndirect(Unwrap(pBufferForArgs), AlignedByteOffsetForArgs);
+	}
+
+	void WrappedD3D11Context::Dispatch(UINT ThreadGroupCountX, UINT ThreadGroupCountY,
+									   UINT ThreadGroupCountZ)
+	{
+		GetActivePtr()->Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
+	}
+
+	void WrappedD3D11Context::DispatchIndirect(ID3D11Buffer *pBufferForArgs,
+											   UINT AlignedByteOffsetForArgs)
+	{
+		GetActivePtr()->DispatchIndirect(Unwrap(pBufferForArgs), AlignedByteOffsetForArgs);
+	}
+
+	HRESULT WrappedD3D11Context::Map(ID3D11Resource *pResource, UINT Subresource, 
+									 D3D11_MAP MapType, UINT MapFlags, 
+									 D3D11_MAPPED_SUBRESOURCE *pMappedResource)
+	{
+		return GetActivePtr()->Map(Unwrap(pResource), Subresource, 
+								   MapType, MapFlags, pMappedResource);
+	}
+
+	void WrappedD3D11Context::Unmap(ID3D11Resource *pResource, UINT Subresource)
 	{
 		GetActivePtr()->Unmap(Unwrap(pResource), Subresource);
 	}
 
-	void D3D11ContextDelegate::IASetInputLayout(ID3D11InputLayout *pInputLayout)
+	void WrappedD3D11Context::IASetInputLayout(ID3D11InputLayout *pInputLayout)
 	{
 		GetActivePtr()->IASetInputLayout(Unwrap(pInputLayout));
 	}
 
-	void D3D11ContextDelegate::IASetVertexBuffers(UINT StartSlot, UINT NumBuffers, 
+	void WrappedD3D11Context::IASetVertexBuffers(UINT StartSlot, UINT NumBuffers, 
 												  ID3D11Buffer *const *ppVertexBuffers, 
 												  const UINT *pStrides, const UINT *pOffsets)
 	{
@@ -243,55 +292,41 @@ namespace rdclight
 			pStrides, pOffsets);
 	}
 
-	void D3D11ContextDelegate::IASetIndexBuffer(ID3D11Buffer *pIndexBuffer, DXGI_FORMAT Format, 
-												UINT Offset)
+	void WrappedD3D11Context::IASetIndexBuffer(ID3D11Buffer *pIndexBuffer, DXGI_FORMAT Format, 
+											   UINT Offset)
 	{
 		GetActivePtr()->IASetIndexBuffer(Unwrap(pIndexBuffer), Format, Offset);
 	}
 
-	void D3D11ContextDelegate::DrawIndexedInstanced(
-		UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, 
-		INT BaseVertexLocation, UINT StartInstanceLocation)
-	{
-		GetActivePtr()->DrawIndexedInstanced(IndexCountPerInstance, InstanceCount, 
-											 StartIndexLocation, BaseVertexLocation, 
-											 StartInstanceLocation);
-	}
-
-	void D3D11ContextDelegate::DrawInstanced(UINT VertexCountPerInstance, UINT InstanceCount, 
-											 UINT StartVertexLocation, 
-											 UINT StartInstanceLocation)
-	{
-		GetActivePtr()->DrawInstanced(VertexCountPerInstance, InstanceCount, 
-									  StartVertexLocation, StartInstanceLocation);
-	}
-
-	void D3D11ContextDelegate::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY Topology)
+	void WrappedD3D11Context::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY Topology)
 	{
 		GetActivePtr()->IASetPrimitiveTopology(Topology);
 	}
 
-	void D3D11ContextDelegate::Begin(ID3D11Asynchronous *pAsync)
+	void WrappedD3D11Context::Begin(ID3D11Asynchronous *pAsync)
 	{
 		GetActivePtr()->Begin(Unwrap(pAsync));
 	}
 
-	void D3D11ContextDelegate::End(ID3D11Asynchronous *pAsync)
+	void WrappedD3D11Context::End(ID3D11Asynchronous *pAsync)
 	{
 		GetActivePtr()->End(Unwrap(pAsync));
 	}
 
-	HRESULT D3D11ContextDelegate::GetData(ID3D11Asynchronous *pAsync, void *pData, UINT DataSize, UINT GetDataFlags)
+	HRESULT WrappedD3D11Context::GetData(ID3D11Asynchronous *pAsync, void *pData, 
+										 UINT DataSize, UINT GetDataFlags)
 	{
 		return GetActivePtr()->GetData(Unwrap(pAsync), pData, DataSize, GetDataFlags);
 	}
 
-	void D3D11ContextDelegate::SetPredication(ID3D11Predicate *pPredicate, BOOL PredicateValue)
+	void WrappedD3D11Context::SetPredication(ID3D11Predicate *pPredicate, BOOL PredicateValue)
 	{
 		GetActivePtr()->SetPredication(Unwrap(pPredicate), PredicateValue);
 	}
 
-	void D3D11ContextDelegate::OMSetRenderTargets(UINT NumViews, ID3D11RenderTargetView *const *ppRenderTargetViews, ID3D11DepthStencilView *pDepthStencilView)
+	void WrappedD3D11Context::OMSetRenderTargets(
+		UINT NumViews, ID3D11RenderTargetView *const *ppRenderTargetViews, 
+		ID3D11DepthStencilView *pDepthStencilView)
 	{
 		ID3D11RenderTargetView* pUnwrappedRTViews[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
 		GetActivePtr()->OMSetRenderTargets(NumViews, 
@@ -299,7 +334,7 @@ namespace rdclight
 										   Unwrap(pDepthStencilView));
 	}
 
-	void D3D11ContextDelegate::OMSetRenderTargetsAndUnorderedAccessViews(
+	void WrappedD3D11Context::OMSetRenderTargetsAndUnorderedAccessViews(
 		UINT NumRTVs, ID3D11RenderTargetView *const *ppRenderTargetViews, 
 		ID3D11DepthStencilView *pDepthStencilView, 
 		UINT UAVStartSlot, UINT NumUAVs, ID3D11UnorderedAccessView *const *ppUnorderedAccessViews, 
@@ -307,32 +342,45 @@ namespace rdclight
 	{
 		ID3D11RenderTargetView* pUnwrappedRTViews[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
 		ID3D11UnorderedAccessView* pUnwrappedUAViews[D3D11_1_UAV_SLOT_COUNT];
+
+		ID3D11RenderTargetView** ppRTVs = NULL;
+		ID3D11UnorderedAccessView** ppUAVs = NULL;
+		if (NumRTVs != D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL)
+			ppRTVs = Unwrap(NumRTVs, ppRenderTargetViews, pUnwrappedRTViews);
+
+		if (NumUAVs != D3D11_KEEP_UNORDERED_ACCESS_VIEWS)
+			ppUAVs = Unwrap(NumUAVs, ppUnorderedAccessViews, pUnwrappedUAViews);
+
 		GetActivePtr()->OMSetRenderTargetsAndUnorderedAccessViews(
-			NumRTVs, Unwrap(NumRTVs, ppRenderTargetViews, pUnwrappedRTViews), 
-			Unwrap(pDepthStencilView),
-			UAVStartSlot, NumUAVs, Unwrap(NumUAVs, ppUnorderedAccessViews, pUnwrappedUAViews), 
-			pUAVInitialCounts);
+			NumRTVs, ppRTVs, Unwrap(pDepthStencilView),
+			UAVStartSlot, NumUAVs, ppUAVs, pUAVInitialCounts);
 	}
 
-	void D3D11ContextDelegate::OMSetBlendState(ID3D11BlendState *pBlendState, const FLOAT BlendFactor[4], UINT SampleMask)
+	void WrappedD3D11Context::OMSetBlendState(ID3D11BlendState *pBlendState, 
+											  const FLOAT BlendFactor[4], UINT SampleMask)
 	{
 		GetActivePtr()->OMSetBlendState(Unwrap(pBlendState), BlendFactor, SampleMask);
 	}
 
-	void D3D11ContextDelegate::OMSetDepthStencilState(ID3D11DepthStencilState *pDepthStencilState, UINT StencilRef)
+	void WrappedD3D11Context::OMSetDepthStencilState(
+		ID3D11DepthStencilState *pDepthStencilState, UINT StencilRef)
 	{
 		GetActivePtr()->OMSetDepthStencilState(Unwrap(pDepthStencilState), StencilRef);
 	}
 
-	void D3D11ContextDelegate::SOSetTargets(UINT NumBuffers, ID3D11Buffer *const *ppSOTargets, const UINT *pOffsets)
+	void WrappedD3D11Context::SOSetTargets(
+		UINT NumBuffers, ID3D11Buffer *const *ppSOTargets, const UINT *pOffsets)
 	{
 		ID3D11Buffer* pUnwrappedSOTargets[D3D11_SO_BUFFER_SLOT_COUNT];
+		for (int i = 0; i < D3D11_SO_BUFFER_SLOT_COUNT; ++i)
+			m_SOOffsets[i] = (pOffsets && i < NumBuffers) ? pOffsets[i] : 0;
+
 		GetActivePtr()->SOSetTargets(NumBuffers, 
 									 Unwrap(NumBuffers, ppSOTargets, pUnwrappedSOTargets), 
 									 pOffsets);
 	}
 
-	void D3D11ContextDelegate::CSSetUnorderedAccessViews(
+	void WrappedD3D11Context::CSSetUnorderedAccessViews(
 		UINT StartSlot, UINT NumUAVs, ID3D11UnorderedAccessView *const *ppUnorderedAccessViews, 
 		const UINT *pUAVInitialCounts)
 	{
@@ -342,51 +390,22 @@ namespace rdclight
 			pUAVInitialCounts);
 	}
 
-	void D3D11ContextDelegate::DrawAuto()
-	{
-		GetActivePtr()->DrawAuto();
-	}
-
-	void D3D11ContextDelegate::DrawIndexedInstancedIndirect(
-		ID3D11Buffer *pBufferForArgs, UINT AlignedByteOffsetForArgs)
-	{
-		GetActivePtr()->DrawIndexedInstancedIndirect(Unwrap(pBufferForArgs), AlignedByteOffsetForArgs);
-	}
-
-	void D3D11ContextDelegate::DrawInstancedIndirect(ID3D11Buffer *pBufferForArgs, 
-													 UINT AlignedByteOffsetForArgs)
-	{
-		GetActivePtr()->DrawInstancedIndirect(Unwrap(pBufferForArgs), AlignedByteOffsetForArgs);
-	}
-
-	void D3D11ContextDelegate::Dispatch(UINT ThreadGroupCountX, UINT ThreadGroupCountY, 
-										UINT ThreadGroupCountZ)
-	{
-		GetActivePtr()->Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
-	}
-
-	void D3D11ContextDelegate::DispatchIndirect(ID3D11Buffer *pBufferForArgs, 
-												UINT AlignedByteOffsetForArgs)
-	{
-		GetActivePtr()->DispatchIndirect(Unwrap(pBufferForArgs), AlignedByteOffsetForArgs);
-	}
-
-	void D3D11ContextDelegate::RSSetState(ID3D11RasterizerState *pRasterizerState)
+	void WrappedD3D11Context::RSSetState(ID3D11RasterizerState *pRasterizerState)
 	{
 		GetActivePtr()->RSSetState(Unwrap(pRasterizerState));
 	}
 
-	void D3D11ContextDelegate::RSSetViewports(UINT NumViewports, const D3D11_VIEWPORT *pViewports)
+	void WrappedD3D11Context::RSSetViewports(UINT NumViewports, const D3D11_VIEWPORT *pViewports)
 	{
 		GetActivePtr()->RSSetViewports(NumViewports, pViewports);
 	}
 
-	void D3D11ContextDelegate::RSSetScissorRects(UINT NumRects, const D3D11_RECT *pRects)
+	void WrappedD3D11Context::RSSetScissorRects(UINT NumRects, const D3D11_RECT *pRects)
 	{
 		GetActivePtr()->RSSetScissorRects(NumRects, pRects);
 	}
 
-	void D3D11ContextDelegate::CopySubresourceRegion(
+	void WrappedD3D11Context::CopySubresourceRegion(
 		ID3D11Resource *pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, 
 		ID3D11Resource *pSrcResource, UINT SrcSubresource, const D3D11_BOX *pSrcBox)
 	{
@@ -395,12 +414,12 @@ namespace rdclight
 			Unwrap(pSrcResource), SrcSubresource, pSrcBox);
 	}
 
-	void D3D11ContextDelegate::CopyResource(ID3D11Resource *pDstResource, ID3D11Resource *pSrcResource)
+	void WrappedD3D11Context::CopyResource(ID3D11Resource *pDstResource, ID3D11Resource *pSrcResource)
 	{
 		GetActivePtr()->CopyResource(Unwrap(pDstResource), Unwrap(pSrcResource));
 	}
 
-	void D3D11ContextDelegate::UpdateSubresource(
+	void WrappedD3D11Context::UpdateSubresource(
 		ID3D11Resource *pDstResource, UINT DstSubresource, const D3D11_BOX *pDstBox, 
 		const void *pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch)
 	{
@@ -408,49 +427,49 @@ namespace rdclight
 										  pSrcData, SrcRowPitch, SrcDepthPitch);
 	}
 
-	void D3D11ContextDelegate::CopyStructureCount(ID3D11Buffer *pDstBuffer, UINT DstAlignedByteOffset, 
+	void WrappedD3D11Context::CopyStructureCount(ID3D11Buffer *pDstBuffer, UINT DstAlignedByteOffset, 
 												  ID3D11UnorderedAccessView *pSrcView)
 	{
 		GetActivePtr()->CopyStructureCount(
 			Unwrap(pDstBuffer), DstAlignedByteOffset, Unwrap(pSrcView));
 	}
 
-	void D3D11ContextDelegate::ClearRenderTargetView(ID3D11RenderTargetView *pRenderTargetView, const FLOAT ColorRGBA[4])
+	void WrappedD3D11Context::ClearRenderTargetView(ID3D11RenderTargetView *pRenderTargetView, const FLOAT ColorRGBA[4])
 	{
 		GetActivePtr()->ClearRenderTargetView(Unwrap(pRenderTargetView), ColorRGBA);
 	}
 
-	void D3D11ContextDelegate::ClearUnorderedAccessViewUint(ID3D11UnorderedAccessView *pUnorderedAccessView, const UINT Values[4])
+	void WrappedD3D11Context::ClearUnorderedAccessViewUint(ID3D11UnorderedAccessView *pUnorderedAccessView, const UINT Values[4])
 	{
 		GetActivePtr()->ClearUnorderedAccessViewUint(Unwrap(pUnorderedAccessView), Values);
 	}
 
-	void D3D11ContextDelegate::ClearUnorderedAccessViewFloat(ID3D11UnorderedAccessView *pUnorderedAccessView, const FLOAT Values[4])
+	void WrappedD3D11Context::ClearUnorderedAccessViewFloat(ID3D11UnorderedAccessView *pUnorderedAccessView, const FLOAT Values[4])
 	{
 		GetActivePtr()->ClearUnorderedAccessViewFloat(Unwrap(pUnorderedAccessView), Values);
 	}
 
-	void D3D11ContextDelegate::ClearDepthStencilView(ID3D11DepthStencilView *pDepthStencilView, UINT ClearFlags, FLOAT Depth, UINT8 Stencil)
+	void WrappedD3D11Context::ClearDepthStencilView(ID3D11DepthStencilView *pDepthStencilView, UINT ClearFlags, FLOAT Depth, UINT8 Stencil)
 	{
 		GetActivePtr()->ClearDepthStencilView(Unwrap(pDepthStencilView), ClearFlags, Depth, Stencil);
 	}
 
-	void D3D11ContextDelegate::GenerateMips(ID3D11ShaderResourceView *pShaderResourceView)
+	void WrappedD3D11Context::GenerateMips(ID3D11ShaderResourceView *pShaderResourceView)
 	{
 		GetActivePtr()->GenerateMips(Unwrap(pShaderResourceView));
 	}
 
-	void D3D11ContextDelegate::SetResourceMinLOD(ID3D11Resource *pResource, FLOAT MinLOD)
+	void WrappedD3D11Context::SetResourceMinLOD(ID3D11Resource *pResource, FLOAT MinLOD)
 	{
 		GetActivePtr()->SetResourceMinLOD(Unwrap(pResource), MinLOD);
 	}
 
-	FLOAT D3D11ContextDelegate::GetResourceMinLOD(ID3D11Resource *pResource)
+	FLOAT WrappedD3D11Context::GetResourceMinLOD(ID3D11Resource *pResource)
 	{
 		return GetActivePtr()->GetResourceMinLOD(Unwrap(pResource));
 	}
 
-	void D3D11ContextDelegate::ResolveSubresource(
+	void WrappedD3D11Context::ResolveSubresource(
 		ID3D11Resource *pDstResource, UINT DstSubresource, 
 		ID3D11Resource *pSrcResource, UINT SrcSubresource, DXGI_FORMAT Format)
 	{
@@ -458,22 +477,22 @@ namespace rdclight
 										   Unwrap(pSrcResource), SrcSubresource, Format);
 	}
 
-	void D3D11ContextDelegate::ExecuteCommandList(ID3D11CommandList *pCommandList, BOOL RestoreContextState)
+	void WrappedD3D11Context::ExecuteCommandList(ID3D11CommandList *pCommandList, 
+												 BOOL RestoreContextState)
 	{
-		// not support yet.
-// 		GetActivePtr()->ExecuteCommandList(pCommandList, RestoreContextState);
+		LogError("ExecuteCommandList is not suppported by now.");
 	}
 
 
 #pragma region GetShaderState
-	void D3D11ContextDelegate::VSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
+	void WrappedD3D11Context::VSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
 													ID3D11Buffer **ppConstantBuffers)
 	{
 		GetActivePtr()->VSGetConstantBuffers(StartSlot, NumBuffers, ppConstantBuffers);
 		Wrap(ppConstantBuffers, NumBuffers);
 	}
 
-	void D3D11ContextDelegate::VSGetShader(ID3D11VertexShader **ppVertexShader, 
+	void WrappedD3D11Context::VSGetShader(ID3D11VertexShader **ppVertexShader, 
 										   ID3D11ClassInstance **ppClassInstances, 
 										   UINT *pNumClassInstances)
 	{
@@ -481,28 +500,28 @@ namespace rdclight
 		Wrap(ppVertexShader);
 	}
 
-	void D3D11ContextDelegate::VSGetShaderResources(UINT StartSlot, UINT NumViews, 
+	void WrappedD3D11Context::VSGetShaderResources(UINT StartSlot, UINT NumViews, 
 													ID3D11ShaderResourceView **ppShaderResourceViews)
 	{
 		GetActivePtr()->VSGetShaderResources(StartSlot, NumViews, ppShaderResourceViews);
 		Wrap(ppShaderResourceViews, NumViews);
 	}
 
-	void D3D11ContextDelegate::VSGetSamplers(UINT StartSlot, UINT NumSamplers, 
+	void WrappedD3D11Context::VSGetSamplers(UINT StartSlot, UINT NumSamplers, 
 											 ID3D11SamplerState **ppSamplers)
 	{
 		GetActivePtr()->VSGetSamplers(StartSlot, NumSamplers, ppSamplers);
 		Wrap(ppSamplers, NumSamplers);
 	}
 
-	void D3D11ContextDelegate::HSGetShaderResources(UINT StartSlot, UINT NumViews, 
+	void WrappedD3D11Context::HSGetShaderResources(UINT StartSlot, UINT NumViews, 
 													ID3D11ShaderResourceView **ppShaderResourceViews)
 	{
 		GetActivePtr()->HSGetShaderResources(StartSlot, NumViews, ppShaderResourceViews);
 		Wrap(ppShaderResourceViews, NumViews);
 	}
 
-	void D3D11ContextDelegate::HSGetShader(ID3D11HullShader **ppHullShader, 
+	void WrappedD3D11Context::HSGetShader(ID3D11HullShader **ppHullShader, 
 										   ID3D11ClassInstance **ppClassInstances, 
 										   UINT *pNumClassInstances)
 	{
@@ -510,28 +529,28 @@ namespace rdclight
 		Wrap(ppHullShader);
 	}
 
-	void D3D11ContextDelegate::HSGetSamplers(UINT StartSlot, UINT NumSamplers, 
+	void WrappedD3D11Context::HSGetSamplers(UINT StartSlot, UINT NumSamplers, 
 											 ID3D11SamplerState **ppSamplers)
 	{
 		GetActivePtr()->HSGetSamplers(StartSlot, NumSamplers, ppSamplers);
 		Wrap(ppSamplers, NumSamplers);
 	}
 
-	void D3D11ContextDelegate::HSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
+	void WrappedD3D11Context::HSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
 													ID3D11Buffer **ppConstantBuffers)
 	{
 		GetActivePtr()->HSGetConstantBuffers(StartSlot, NumBuffers, ppConstantBuffers);
 		Wrap(ppConstantBuffers, NumBuffers);
 	}
 
-	void D3D11ContextDelegate::DSGetShaderResources(UINT StartSlot, UINT NumViews, 
+	void WrappedD3D11Context::DSGetShaderResources(UINT StartSlot, UINT NumViews, 
 													ID3D11ShaderResourceView **ppShaderResourceViews)
 	{
 		GetActivePtr()->DSGetShaderResources(StartSlot, NumViews, ppShaderResourceViews);
 		Wrap(ppShaderResourceViews, NumViews);
 	}
 
-	void D3D11ContextDelegate::DSGetShader(ID3D11DomainShader **ppDomainShader, 
+	void WrappedD3D11Context::DSGetShader(ID3D11DomainShader **ppDomainShader, 
 										   ID3D11ClassInstance **ppClassInstances, 
 										   UINT *pNumClassInstances)
 	{
@@ -539,28 +558,28 @@ namespace rdclight
 		Wrap(ppDomainShader);
 	}
 
-	void D3D11ContextDelegate::DSGetSamplers(UINT StartSlot, UINT NumSamplers, 
+	void WrappedD3D11Context::DSGetSamplers(UINT StartSlot, UINT NumSamplers, 
 											 ID3D11SamplerState **ppSamplers)
 	{
 		GetActivePtr()->DSGetSamplers(StartSlot, NumSamplers, ppSamplers);
 		Wrap(ppSamplers, NumSamplers);
 	}
 
-	void D3D11ContextDelegate::DSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
+	void WrappedD3D11Context::DSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
 													ID3D11Buffer **ppConstantBuffers)
 	{
 		GetActivePtr()->DSGetConstantBuffers(StartSlot, NumBuffers, ppConstantBuffers);
 		Wrap(ppConstantBuffers, NumBuffers);
 	}
 
-	void D3D11ContextDelegate::GSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
+	void WrappedD3D11Context::GSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
 													ID3D11Buffer **ppConstantBuffers)
 	{
 		GetActivePtr()->GSGetConstantBuffers(StartSlot, NumBuffers, ppConstantBuffers);
 		Wrap(ppConstantBuffers, NumBuffers);
 	}
 
-	void D3D11ContextDelegate::GSGetShader(ID3D11GeometryShader **ppGeometryShader, 
+	void WrappedD3D11Context::GSGetShader(ID3D11GeometryShader **ppGeometryShader, 
 										   ID3D11ClassInstance **ppClassInstances, 
 										   UINT *pNumClassInstances)
 	{
@@ -568,28 +587,28 @@ namespace rdclight
 		Wrap(ppGeometryShader);
 	}
 
-	void D3D11ContextDelegate::GSGetShaderResources(UINT StartSlot, UINT NumViews, 
+	void WrappedD3D11Context::GSGetShaderResources(UINT StartSlot, UINT NumViews, 
 													ID3D11ShaderResourceView **ppShaderResourceViews)
 	{
 		GetActivePtr()->GSGetShaderResources(StartSlot, NumViews, ppShaderResourceViews);
 		Wrap(ppShaderResourceViews, NumViews);
 	}
 
-	void D3D11ContextDelegate::GSGetSamplers(UINT StartSlot, UINT NumSamplers, 
+	void WrappedD3D11Context::GSGetSamplers(UINT StartSlot, UINT NumSamplers, 
 											 ID3D11SamplerState **ppSamplers)
 	{
 		GetActivePtr()->GSGetSamplers(StartSlot, NumSamplers, ppSamplers);
 		Wrap(ppSamplers, NumSamplers);
 	}
 
-	void D3D11ContextDelegate::PSGetShaderResources(UINT StartSlot, UINT NumViews, 
+	void WrappedD3D11Context::PSGetShaderResources(UINT StartSlot, UINT NumViews, 
 													ID3D11ShaderResourceView **ppShaderResourceViews)
 	{
 		GetActivePtr()->PSGetShaderResources(StartSlot, NumViews, ppShaderResourceViews);
 		Wrap(ppShaderResourceViews, NumViews);
 	}
 
-	void D3D11ContextDelegate::PSGetShader(ID3D11PixelShader **ppPixelShader, 
+	void WrappedD3D11Context::PSGetShader(ID3D11PixelShader **ppPixelShader, 
 										   ID3D11ClassInstance **ppClassInstances, 
 										   UINT *pNumClassInstances)
 	{
@@ -597,35 +616,35 @@ namespace rdclight
 		Wrap(ppPixelShader);
 	}
 
-	void D3D11ContextDelegate::PSGetSamplers(UINT StartSlot, UINT NumSamplers, 
+	void WrappedD3D11Context::PSGetSamplers(UINT StartSlot, UINT NumSamplers, 
 											 ID3D11SamplerState **ppSamplers)
 	{
 		GetActivePtr()->PSGetSamplers(StartSlot, NumSamplers, ppSamplers);
 		Wrap(ppSamplers, NumSamplers);
 	}
 
-	void D3D11ContextDelegate::PSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
+	void WrappedD3D11Context::PSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
 													ID3D11Buffer **ppConstantBuffers)
 	{
 		GetActivePtr()->PSGetConstantBuffers(StartSlot, NumBuffers, ppConstantBuffers);
 		Wrap(ppConstantBuffers, NumBuffers);
 	}
 
-	void D3D11ContextDelegate::CSGetShaderResources(UINT StartSlot, UINT NumViews, 
+	void WrappedD3D11Context::CSGetShaderResources(UINT StartSlot, UINT NumViews, 
 													ID3D11ShaderResourceView **ppShaderResourceViews)
 	{
 		GetActivePtr()->CSGetShaderResources(StartSlot, NumViews, ppShaderResourceViews);
 		Wrap(ppShaderResourceViews, NumViews);
 	}
 
-	void D3D11ContextDelegate::CSGetUnorderedAccessViews(UINT StartSlot, UINT NumUAVs, 
-														 ID3D11UnorderedAccessView **ppUnorderedAccessViews)
+	void WrappedD3D11Context::CSGetUnorderedAccessViews(
+		UINT StartSlot, UINT NumUAVs, ID3D11UnorderedAccessView **ppUnorderedAccessViews)
 	{
 		GetActivePtr()->CSGetUnorderedAccessViews(StartSlot, NumUAVs, ppUnorderedAccessViews);
 		Wrap(ppUnorderedAccessViews, NumUAVs);
 	}
 
-	void D3D11ContextDelegate::CSGetShader(ID3D11ComputeShader **ppComputeShader, 
+	void WrappedD3D11Context::CSGetShader(ID3D11ComputeShader **ppComputeShader, 
 										   ID3D11ClassInstance **ppClassInstances, 
 										   UINT *pNumClassInstances)
 	{
@@ -633,35 +652,28 @@ namespace rdclight
 		Wrap(ppComputeShader);
 	}
 
-	void D3D11ContextDelegate::CSGetSamplers(UINT StartSlot, UINT NumSamplers, 
+	void WrappedD3D11Context::CSGetSamplers(UINT StartSlot, UINT NumSamplers, 
 											 ID3D11SamplerState **ppSamplers)
 	{
 		GetActivePtr()->CSGetSamplers(StartSlot, NumSamplers, ppSamplers);
 		Wrap(ppSamplers, NumSamplers);
 	}
-
-	void D3D11ContextDelegate::CSGetConstantBuffers(UINT StartSlot, UINT NumBuffers, 
-													ID3D11Buffer **ppConstantBuffers)
-	{
-		GetActivePtr()->CSGetConstantBuffers(StartSlot, NumBuffers, ppConstantBuffers);
-		Wrap(ppConstantBuffers, NumBuffers);
-	}
 #pragma endregion GetShaderState
 
 
 #pragma region GetPipelineState
-	void D3D11ContextDelegate::IAGetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY *pTopology)
+	void WrappedD3D11Context::IAGetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY *pTopology)
 	{
 		GetActivePtr()->IAGetPrimitiveTopology(pTopology);
 	}
 
-	void D3D11ContextDelegate::IAGetInputLayout(ID3D11InputLayout **ppInputLayout)
+	void WrappedD3D11Context::IAGetInputLayout(ID3D11InputLayout **ppInputLayout)
 	{
 		GetActivePtr()->IAGetInputLayout(ppInputLayout);
 		Wrap(ppInputLayout);
 	}
 
-	void D3D11ContextDelegate::IAGetVertexBuffers(
+	void WrappedD3D11Context::IAGetVertexBuffers(
 		UINT StartSlot, UINT NumBuffers, ID3D11Buffer **ppVertexBuffers, 
 		UINT *pStrides, UINT *pOffsets)
 	{
@@ -669,36 +681,36 @@ namespace rdclight
 		Wrap(ppVertexBuffers, NumBuffers);
 	}
 
-	void D3D11ContextDelegate::IAGetIndexBuffer(ID3D11Buffer **pIndexBuffer, 
+	void WrappedD3D11Context::IAGetIndexBuffer(ID3D11Buffer **pIndexBuffer, 
 												DXGI_FORMAT *Format, UINT *Offset)
 	{
 		GetActivePtr()->IAGetIndexBuffer(pIndexBuffer, Format, Offset);
 		Wrap(pIndexBuffer);
 	}
 
-	void D3D11ContextDelegate::SOGetTargets(UINT NumBuffers, ID3D11Buffer **ppSOTargets)
+	void WrappedD3D11Context::SOGetTargets(UINT NumBuffers, ID3D11Buffer **ppSOTargets)
 	{
 		GetActivePtr()->SOGetTargets(NumBuffers, ppSOTargets);
 		Wrap(ppSOTargets, NumBuffers);
 	}
 
-	void D3D11ContextDelegate::RSGetState(ID3D11RasterizerState **ppRasterizerState)
+	void WrappedD3D11Context::RSGetState(ID3D11RasterizerState **ppRasterizerState)
 	{
 		GetActivePtr()->RSGetState(ppRasterizerState);
 		Wrap(ppRasterizerState);
 	}
 
-	void D3D11ContextDelegate::RSGetViewports(UINT *pNumViewports, D3D11_VIEWPORT *pViewports)
+	void WrappedD3D11Context::RSGetViewports(UINT *pNumViewports, D3D11_VIEWPORT *pViewports)
 	{
 		GetActivePtr()->RSGetViewports(pNumViewports, pViewports);
 	}
 
-	void D3D11ContextDelegate::RSGetScissorRects(UINT *pNumRects, D3D11_RECT *pRects)
+	void WrappedD3D11Context::RSGetScissorRects(UINT *pNumRects, D3D11_RECT *pRects)
 	{
 		GetActivePtr()->RSGetScissorRects(pNumRects, pRects);
 	}
 
-	void D3D11ContextDelegate::OMGetRenderTargets(
+	void WrappedD3D11Context::OMGetRenderTargets(
 		UINT NumViews, ID3D11RenderTargetView **ppRenderTargetViews, 
 		ID3D11DepthStencilView **ppDepthStencilView)
 	{
@@ -707,7 +719,7 @@ namespace rdclight
 		Wrap(ppDepthStencilView);
 	}
 
-	void D3D11ContextDelegate::OMGetRenderTargetsAndUnorderedAccessViews(
+	void WrappedD3D11Context::OMGetRenderTargetsAndUnorderedAccessViews(
 		UINT NumRTVs, ID3D11RenderTargetView **ppRenderTargetViews, 
 		ID3D11DepthStencilView **ppDepthStencilView, 
 		UINT UAVStartSlot, UINT NumUAVs, ID3D11UnorderedAccessView **ppUnorderedAccessViews)
@@ -721,19 +733,26 @@ namespace rdclight
 		Wrap(ppUnorderedAccessViews, NumUAVs);
 	}
 
-	void D3D11ContextDelegate::OMGetBlendState(ID3D11BlendState **ppBlendState, FLOAT BlendFactor[4], UINT *pSampleMask)
+	void WrappedD3D11Context::OMGetBlendState(ID3D11BlendState **ppBlendState, FLOAT BlendFactor[4], UINT *pSampleMask)
 	{
 		GetActivePtr()->OMGetBlendState(ppBlendState, BlendFactor, pSampleMask);
 		Wrap(ppBlendState);
 	}
 
-	void D3D11ContextDelegate::OMGetDepthStencilState(ID3D11DepthStencilState **ppDepthStencilState, UINT *pStencilRef)
+	void WrappedD3D11Context::OMGetDepthStencilState(ID3D11DepthStencilState **ppDepthStencilState, UINT *pStencilRef)
 	{
 		GetActivePtr()->OMGetDepthStencilState(ppDepthStencilState, pStencilRef);
 		Wrap(ppDepthStencilState);
 	}
 
-	void D3D11ContextDelegate::GetPredication(ID3D11Predicate **ppPredicate, BOOL *pPredicateValue)
+	void WrappedD3D11Context::CSGetConstantBuffers(UINT StartSlot, UINT NumBuffers,
+												   ID3D11Buffer **ppConstantBuffers)
+	{
+		GetActivePtr()->CSGetConstantBuffers(StartSlot, NumBuffers, ppConstantBuffers);
+		Wrap(ppConstantBuffers, NumBuffers);
+	}
+
+	void WrappedD3D11Context::GetPredication(ID3D11Predicate **ppPredicate, BOOL *pPredicateValue)
 	{
 		GetActivePtr()->GetPredication(ppPredicate, pPredicateValue);
 		Wrap(ppPredicate);
@@ -741,33 +760,45 @@ namespace rdclight
 #pragma endregion GetPipelineState
 
 
-	void D3D11ContextDelegate::ClearState()
+	void WrappedD3D11Context::ClearState()
 	{
 		GetActivePtr()->ClearState();
 	}
 
-	void D3D11ContextDelegate::Flush()
+	void WrappedD3D11Context::Flush()
 	{
 		GetActivePtr()->Flush();
 	}
 
-	D3D11_DEVICE_CONTEXT_TYPE D3D11ContextDelegate::GetType()
+	D3D11_DEVICE_CONTEXT_TYPE WrappedD3D11Context::GetType()
 	{
 		return GetActivePtr()->GetType();
 	}
 
-	UINT D3D11ContextDelegate::GetContextFlags()
+	UINT WrappedD3D11Context::GetContextFlags()
 	{
 		return GetActivePtr()->GetContextFlags();
 	}
 
-	HRESULT D3D11ContextDelegate::FinishCommandList(BOOL RestoreDeferredContextState, 
-													ID3D11CommandList **ppCommandList)
+	HRESULT WrappedD3D11Context::FinishCommandList(BOOL RestoreDeferredContextState, 
+												   ID3D11CommandList **ppCommandList)
 	{
-		return GetActivePtr()->FinishCommandList(RestoreDeferredContextState, ppCommandList);
+		LogError("FinishCommandList is not supported by now");
+		return E_FAIL;
 	}
 
-	ID3D11DeviceChild* D3D11ContextDelegate::CopyToDevice(ID3D11Device* pNewDevice)
+	void WrappedD3D11Context::SaveState(SDeviceContextState* pState)
+	{
+		// TODO_wzq ID3D11AsynchronousµÄ×´Ì¬ÎÞ·¨copy
+		pState->GetFromContext(this, m_SOOffsets);
+	}
+
+	void WrappedD3D11Context::RestoreState(const SDeviceContextState* pState)
+	{
+		pState->SetToContext(this);
+	}
+
+	ID3D11DeviceChild* WrappedD3D11Context::CopyToDevice(ID3D11Device* pNewDevice)
 	{
 		if (GetReal()->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE)
 		{

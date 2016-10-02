@@ -1,7 +1,7 @@
 #pragma once
 #include "WrappedD3D11DeviceChild.h"
 
-namespace rdclight
+namespace rdcboost
 {
 	template <typename NestedType>
 	class WrappedD3D11View : public WrappedD3D11DeviceChild<NestedType>

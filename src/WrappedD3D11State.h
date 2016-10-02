@@ -1,7 +1,7 @@
 #pragma once
 #include "WrappedD3D11DeviceChild.h"
 
-namespace rdclight
+namespace rdcboost
 {
 	class WrappedD3D11BlendState : public WrappedD3D11DeviceChild<ID3D11BlendState>
 	{

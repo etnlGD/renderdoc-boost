@@ -1,7 +1,7 @@
 #include "WrappedD3D11View.h"
 #include "Log.h"
 
-namespace rdclight
+namespace rdcboost
 {
 
 	WrappedD3D11DepthStencilView::WrappedD3D11DepthStencilView(

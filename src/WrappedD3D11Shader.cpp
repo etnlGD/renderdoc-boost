@@ -1,7 +1,7 @@
 #include "WrappedD3D11Shader.h"
 #include "Log.h"
 
-namespace rdclight
+namespace rdcboost
 {
 	WrappedD3D11VertexShader::WrappedD3D11VertexShader(
 		const void* pShaderBytecode, SIZE_T BytecodeLength, 

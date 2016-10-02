@@ -2,13 +2,14 @@
 #include "WrappedD3D11Resource.h"
 #include "WrappedD3D11View.h"
 #include "WrappedD3D11State.h"
-#include "D3D11ContextDelegate.h"
+#include "WrappedD3D11Context.h"
 #include "WrappedD3D11Shader.h"
 #include "WrappedD3D11Async.h"
 #include <assert.h>
 #include "Log.h"
+#include "DeviceContextState.h"
 
-namespace rdclight
+namespace rdcboost
 {
 
 	WrappedD3D11Device::WrappedD3D11Device(ID3D11Device* pRealDevice) :
@@ -18,7 +19,7 @@ namespace rdclight
 
 		ID3D11DeviceContext* pImmediateContext = NULL;
 		m_pReal->GetImmediateContext(&pImmediateContext);
-		m_pWrappedContext = new D3D11ContextDelegate(pImmediateContext, this);
+		m_pWrappedContext = new WrappedD3D11Context(pImmediateContext, this);
 		pImmediateContext->Release();
 	}
 
@@ -129,7 +130,7 @@ namespace rdclight
 	HRESULT WrappedD3D11Device::CreateShaderResourceView(ID3D11Resource *pResource, 
 														 const D3D11_SHADER_RESOURCE_VIEW_DESC *pDesc, 
 														 ID3D11ShaderResourceView **ppSRView)
-	{ // TODO_wzq NOTE: resource should be reconstructed before view.
+	{
 		ID3D11Resource* pRealResource = UnwrapSelf(pResource, InCapture());
 		if (ppSRView == NULL)
 			return m_pReal->CreateShaderResourceView(pRealResource, pDesc, NULL);
@@ -155,7 +156,7 @@ namespace rdclight
 	HRESULT WrappedD3D11Device::CreateUnorderedAccessView(ID3D11Resource *pResource, 
 														  const D3D11_UNORDERED_ACCESS_VIEW_DESC *pDesc, 
 														  ID3D11UnorderedAccessView **ppUAView)
-	{ // TODO_wzq NOTE: resource should be reconstructed before view.
+	{
 		ID3D11Resource* pRealResource = UnwrapSelf(pResource, InCapture());
 
 		if (ppUAView == NULL)
@@ -182,7 +183,7 @@ namespace rdclight
 	HRESULT WrappedD3D11Device::CreateRenderTargetView(ID3D11Resource *pResource, 
 													   const D3D11_RENDER_TARGET_VIEW_DESC *pDesc, 
 													   ID3D11RenderTargetView **ppRTView)
-	{ // TODO_wzq NOTE: resource should be reconstructed before view.
+	{
 		ID3D11Resource* pRealResource = UnwrapSelf(pResource, InCapture());
 		if (ppRTView == NULL)
 			return m_pReal->CreateRenderTargetView(pRealResource, pDesc, NULL);
@@ -208,7 +209,7 @@ namespace rdclight
 	HRESULT WrappedD3D11Device::CreateDepthStencilView(ID3D11Resource *pResource, 
 													   const D3D11_DEPTH_STENCIL_VIEW_DESC *pDesc, 
 													   ID3D11DepthStencilView **ppDepthStencilView)
-	{ // TODO_wzq NOTE: resource should be reconstructed before view.
+	{
 		ID3D11Resource* pRealResource = UnwrapSelf(pResource, InCapture());
 		if (ppDepthStencilView == NULL)
 			return m_pReal->CreateDepthStencilView(pRealResource, pDesc, NULL);
@@ -231,12 +232,11 @@ namespace rdclight
 		return ret;
 	}
 
-	HRESULT WrappedD3D11Device::CreateInputLayout(const D3D11_INPUT_ELEMENT_DESC *pInputElementDescs, 
-												  UINT NumElements, 
-												  const void *pShaderBytecodeWithInputSignature, 
-												  SIZE_T BytecodeLength, 
-												  ID3D11InputLayout **ppInputLayout)
-	{ // TODO_wzq save parameters to be used in capture phase.
+	HRESULT WrappedD3D11Device::CreateInputLayout(
+		const D3D11_INPUT_ELEMENT_DESC *pInputElementDescs, UINT NumElements, 
+		const void *pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength, 
+		ID3D11InputLayout **ppInputLayout)
+	{
 		if (ppInputLayout == NULL)
 			return m_pReal->CreateInputLayout(pInputElementDescs, NumElements, 
 											  pShaderBytecodeWithInputSignature, 
@@ -298,7 +298,7 @@ namespace rdclight
 													 SIZE_T BytecodeLength, 
 													 ID3D11ClassLinkage *pClassLinkage, 
 													 ID3D11GeometryShader **ppGeometryShader)
-	{ // TODO_wzq save parameters to be used in capture phase.
+	{
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -330,10 +330,12 @@ namespace rdclight
 		const D3D11_SO_DECLARATION_ENTRY *pSODeclaration, UINT NumEntries, 
 		const UINT *pBufferStrides, UINT NumStrides, UINT RasterizedStream, 
 		ID3D11ClassLinkage *pClassLinkage, ID3D11GeometryShader **ppGeometryShader)
-	{ // TODO_wzq save parameters to be used in capture phase.
-		// TODO_wzq not support yet.
+	{ 
+		LogError("CreateGeometryShaderWithStreamOutput is not supported by now");
+
 		if (ppGeometryShader)
 			*ppGeometryShader = NULL;
+
 		return E_FAIL;
 	}
 
@@ -341,7 +343,7 @@ namespace rdclight
 												  SIZE_T BytecodeLength, 
 												  ID3D11ClassLinkage *pClassLinkage, 
 												  ID3D11PixelShader **ppPixelShader)
-	{ // TODO_wzq save parameters to be used in capture phase.
+	{
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -372,7 +374,7 @@ namespace rdclight
 												 SIZE_T BytecodeLength, 
 												 ID3D11ClassLinkage *pClassLinkage, 
 												 ID3D11HullShader **ppHullShader)
-	{ // TODO_wzq save parameters to be used in capture phase.
+	{
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -402,7 +404,7 @@ namespace rdclight
 												   SIZE_T BytecodeLength, 
 												   ID3D11ClassLinkage *pClassLinkage, 
 												   ID3D11DomainShader **ppDomainShader)
-	{ // TODO_wzq save parameters to be used in capture phase.
+	{
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -432,7 +434,7 @@ namespace rdclight
 													SIZE_T BytecodeLength, 
 													ID3D11ClassLinkage *pClassLinkage, 
 													ID3D11ComputeShader **ppComputeShader)
-	{ // TODO_wzq save parameters to be used in capture phase.
+	{
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -460,9 +462,11 @@ namespace rdclight
 
 	HRESULT WrappedD3D11Device::CreateClassLinkage(ID3D11ClassLinkage **ppLinkage)
 	{
-		// TODO_wzq not support yet.
+		LogError("CreateClassLinkage is not supported by now");
+
 		if (ppLinkage)
 			*ppLinkage = NULL;
+
 		return E_FAIL;
 	}
 
@@ -479,7 +483,7 @@ namespace rdclight
 			auto itWrap = m_BackRefs.find(pRealState);
 			if (itWrap != m_BackRefs.end())
 			{
-				itWrap->second->AddRef();
+				((WrappedD3D11BlendState*)itWrap->second)->AddRef();
 				*ppBlendState = (ID3D11BlendState*)itWrap->second;
 			}
 			else
@@ -513,7 +517,7 @@ namespace rdclight
 			auto itWrap = m_BackRefs.find(pRealState);
 			if (itWrap != m_BackRefs.end())
 			{
-				itWrap->second->AddRef();
+				((WrappedD3D11DepthStencilState*)itWrap->second)->AddRef();
 				*ppDepthStencilState = (ID3D11DepthStencilState*)itWrap->second;
 			}
 			else
@@ -547,7 +551,7 @@ namespace rdclight
 			auto itWrap = m_BackRefs.find(pRealState);
 			if (itWrap != m_BackRefs.end())
 			{
-				itWrap->second->AddRef();
+				((WrappedD3D11RasterizerState*)itWrap->second)->AddRef();
 				*ppRasterizerState = (ID3D11RasterizerState*)itWrap->second;
 			}
 			else
@@ -580,7 +584,7 @@ namespace rdclight
 			auto itWrap = m_BackRefs.find(pRealState);
 			if (itWrap != m_BackRefs.end())
 			{
-				itWrap->second->AddRef();
+				((WrappedD3D11SamplerState*)itWrap->second)->AddRef();
 				*ppSamplerState = (ID3D11SamplerState*)itWrap->second;
 			}
 			else
@@ -625,7 +629,7 @@ namespace rdclight
 
 	HRESULT WrappedD3D11Device::CreatePredicate(const D3D11_QUERY_DESC *pPredicateDesc, 
 												ID3D11Predicate **ppPredicate)
-	{ // TODO_wzq save parameters to be used in capture phase.
+	{
 		if (ppPredicate == NULL)
 			return m_pReal->CreatePredicate(pPredicateDesc, NULL);
 
@@ -672,7 +676,8 @@ namespace rdclight
 	HRESULT WrappedD3D11Device::CreateDeferredContext(UINT ContextFlags, 
 													  ID3D11DeviceContext **ppDeferredContext)
 	{
-		// TODO_wzq not support yet.
+		LogError("CreateDeferredContext is not supported by now");
+
 		if (ppDeferredContext)
 			*ppDeferredContext = NULL;
 		return E_FAIL;
@@ -727,11 +732,13 @@ namespace rdclight
 
 	HRESULT WrappedD3D11Device::SetPrivateData(REFGUID guid, UINT DataSize, const void *pData)
 	{
+		m_PrivateDatas.SetPrivateData(guid, DataSize, pData);
 		return m_pReal->SetPrivateData(guid, DataSize, pData);
 	}
 
 	HRESULT WrappedD3D11Device::SetPrivateDataInterface(REFGUID guid, const IUnknown *pData)
 	{
+		m_PrivateDatas.SetPrivateDataInterface(guid, pData);
 		return m_pReal->SetPrivateDataInterface(guid, pData);
 	}
 
@@ -769,15 +776,35 @@ namespace rdclight
 		return m_pReal->GetExceptionMode();
 	}
 
-	void WrappedD3D11Device::OnDeviceChildReplaced(ID3D11DeviceChild* pOld, 
-												   ID3D11DeviceChild* pNew)
+	void WrappedD3D11Device::SwitchToDevice(ID3D11Device* pNewDevice)
 	{
-		auto it = m_BackRefs.find(pOld);
-		assert(it != m_BackRefs.end());
-		assert(pNew != NULL);
-		m_BackRefs[pNew] = it->second;
-		m_BackRefs.erase(it);
-	}
+		// 1. copy states of the old device to the new one.
+		pNewDevice->SetExceptionMode(m_pReal->GetExceptionMode());
+		m_PrivateDatas.CopyPrivateData(pNewDevice);
 
+		ID3D11DeviceContext* pNewContext = NULL;
+		pNewDevice->GetImmediateContext(&pNewContext);
+
+		// 2. save states of the old immediate device context to the new one.
+		SDeviceContextState deviceContextState;
+		m_pWrappedContext->SaveState(&deviceContextState);
+
+		// 3. copy resources to the new device.
+		std::map<ID3D11DeviceChild*, WrappedD3D11DeviceChildBase*> newBackRefs;
+		for (auto it = m_BackRefs.begin(); it != m_BackRefs.end(); ++it)
+		{
+			it->second->SwitchToDevice(pNewDevice);
+			newBackRefs[it->second->GetRealDeviceChild()] = it->second;
+		}
+
+		m_BackRefs.swap(newBackRefs);
+
+		// 4. restore states of the old immediate device context to the new one.
+		m_pWrappedContext->RestoreState(&deviceContextState);
+
+		pNewDevice->AddRef();
+		m_pReal = pNewDevice;
+		pNewContext->Release();
+	}
 }
 

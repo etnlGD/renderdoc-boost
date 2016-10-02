@@ -1,8 +1,9 @@
 #pragma once
 #include <d3d11.h>
 #include "WrappedD3D11Device.h"
+#include "PrivateDataMap.h"
 
-namespace rdclight
+namespace rdcboost
 {
 	class WrappedD3D11Device;
 
@@ -21,23 +22,8 @@ namespace rdclight
 			m_pReal->Release();
 		}
 
-		ID3D11DeviceChild* GetRealOrRDCWrappedDeviceChild(bool rdcWrapped) 
-		{
-			return m_pReal;
-		}
-
-		void SwitchToDevice(ID3D11Device* pNewDevice)
-		{
-			if (m_pRealDevice == pNewDevice)
-				return;
-
-			ID3D11DeviceChild* pCopied = CopyToDevice(pNewDevice);
-			m_pWrappedDevice->OnDeviceChildReplaced(m_pReal, pCopied);
-			m_pReal->Release();
-			m_pReal = pCopied;
-			m_pRealDevice = pNewDevice;
-		}
-
+		virtual void SwitchToDevice(ID3D11Device* pNewDevice) = 0;
+		
 		ID3D11Device* GetRealDevice() { return m_pRealDevice; }
 
 		ID3D11DeviceChild* GetRealDeviceChild()
@@ -53,6 +39,9 @@ namespace rdclight
 		ID3D11DeviceChild* m_pReal;
 
 	private:
+		template <typename T>
+		friend class WrappedD3D11DeviceChild;
+
 		ID3D11Device* m_pRealDevice;
 	};
 
@@ -63,7 +52,7 @@ namespace rdclight
 			return NULL;
 
 		WrappedD3D11DeviceChildBase* base = (WrappedD3D11DeviceChildBase*)pWrapped;
-		return (UnwrapType*) base->GetRealOrRDCWrappedDeviceChild(rdcWrapped);
+		return (UnwrapType*) base->GetRealDeviceChild();
 	}
 
 	template <typename UnwrapType>
@@ -125,11 +114,14 @@ namespace rdclight
 
 		virtual HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID guid, UINT DataSize, const void *pData)
 		{
+			m_PrivateData.SetPrivateData(guid, DataSize, pData);
 			return GetReal()->SetPrivateData(guid, DataSize, pData);
 		}
 
 		virtual HRESULT STDMETHODCALLTYPE SetPrivateDataInterface(REFGUID guid, const IUnknown *pData)
 		{
+			LogWarn("SetPrivateDataInterface may be risky");
+			m_PrivateData.SetPrivateDataInterface(guid, pData);
 			return GetReal()->SetPrivateDataInterface(guid, pData);
 		}
 
@@ -137,8 +129,22 @@ namespace rdclight
 
 		NestedType* GetRealOrRDCWrapped(bool rdcWrapped);
 
+		virtual void SwitchToDevice(ID3D11Device* pNewDevice)
+		{
+			if (m_pRealDevice == pNewDevice)
+				return;
+
+			ID3D11DeviceChild* pCopied = CopyToDevice(pNewDevice);
+			m_pWrappedDevice->OnDeviceChildReplaced(m_pReal, pCopied);
+			m_PrivateData.CopyPrivateData(pCopied);
+			m_pReal->Release();
+			m_pReal = pCopied;
+			m_pRealDevice = pNewDevice;
+		}
+
 	private:
 		unsigned int m_Ref;
+		PrivateDataMap m_PrivateData;
 	};
 }
 
