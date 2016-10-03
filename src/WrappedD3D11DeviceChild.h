@@ -135,7 +135,6 @@ namespace rdcboost
 				return;
 
 			ID3D11DeviceChild* pCopied = CopyToDevice(pNewDevice);
-			m_pWrappedDevice->OnDeviceChildReplaced(m_pReal, pCopied);
 			m_PrivateData.CopyPrivateData(pCopied);
 			m_pReal->Release();
 			m_pReal = pCopied;

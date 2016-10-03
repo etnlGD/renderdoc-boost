@@ -372,7 +372,7 @@ namespace rdcboost
 		UINT NumBuffers, ID3D11Buffer *const *ppSOTargets, const UINT *pOffsets)
 	{
 		ID3D11Buffer* pUnwrappedSOTargets[D3D11_SO_BUFFER_SLOT_COUNT];
-		for (int i = 0; i < D3D11_SO_BUFFER_SLOT_COUNT; ++i)
+		for (UINT i = 0; i < D3D11_SO_BUFFER_SLOT_COUNT; ++i)
 			m_SOOffsets[i] = (pOffsets && i < NumBuffers) ? pOffsets[i] : 0;
 
 		GetActivePtr()->SOSetTargets(NumBuffers, 

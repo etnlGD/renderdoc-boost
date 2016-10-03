@@ -57,40 +57,40 @@ namespace rdcboost
 		}
 
 	protected:
+		template <typename T>
+		struct Traits
+		{
+			static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc);
+		};
+
+		template <>
+		struct Traits<ID3D11Query>
+		{
+			static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc)
+			{
+				ID3D11Query* pNewPredicate = NULL;
+				if (FAILED(pNewDevice->CreateQuery(desc, &pNewPredicate)))
+					LogError("CreateQuery failed when CopyToDevice");
+
+				return pNewPredicate;
+			}
+		};
+
+		template <>
+		struct Traits<ID3D11Predicate>
+		{
+			static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc)
+			{
+				ID3D11Predicate* pNewPredicate = NULL;
+				if (FAILED(pNewDevice->CreatePredicate(desc, &pNewPredicate)))
+					LogError("CreateQuery failed when CopyToDevice");
+
+				return pNewPredicate;
+			}
+		};
+
 		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice)
 		{
-			template <typename T>
-			struct Traits
-			{
-				static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc);
-			};
-
-			template <>
-			struct Traits<ID3D11Query>
-			{
-				static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc)
-				{
-					ID3D11Query* pNewPredicate = NULL;
-					if (FAILED(pNewDevice->CreateQuery(desc, &pNewPredicate)))
-						LogError("CreateQuery failed when CopyToDevice");
-
-					return pNewPredicate;
-				}
-			};
-
-			template <>
-			struct Traits<ID3D11Predicate>
-			{
-				static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc)
-				{
-					ID3D11Predicate* pNewPredicate = NULL;
-					if (FAILED(pNewDevice->CreatePredicate(desc, &pNewPredicate)))
-						LogError("CreateQuery failed when CopyToDevice");
-
-					return pNewPredicate;
-				}
-			};
-
 			D3D11_QUERY_DESC desc;
 			GetReal()->GetDesc(&desc);
 			return Traits<NestedType>::copyImp(pNewDevice, &desc);

@@ -4,6 +4,7 @@
 
 namespace rdcboost
 {
+	struct SDeviceContextState;
 	class WrappedD3D11Device;
 	class WrappedD3D11Context : public WrappedD3D11DeviceChild<ID3D11DeviceContext>
 	{

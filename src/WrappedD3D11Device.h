@@ -1,6 +1,7 @@
 #pragma once
 #include <d3d11.h>
 #include <map>
+#include "PrivateDataMap.h"
 
 namespace rdcboost
 {
@@ -324,7 +325,7 @@ namespace rdcboost
 				auto it = m_BackRefs.find(ptr);
 				if (it != m_BackRefs.end())
 				{
-					it->second->AddRef();
+					((WrappedD3D11DeviceChild<T>*)it->second)->AddRef();
 					return (T*)it->second;
 				}
 			}
@@ -336,7 +337,7 @@ namespace rdcboost
 		ID3D11Device* m_pReal;
 		ID3D11Device* m_pRDCDevice;
 		WrappedD3D11Context* m_pWrappedContext;
-		std::map<ID3D11DeviceChild*, WrappedD3D11DeviceChildBase*> m_BackRefs;
+		std::map<ID3D11DeviceChild*, class WrappedD3D11DeviceChildBase*> m_BackRefs;
 		PrivateDataMap m_PrivateDatas;
 	};
 }
