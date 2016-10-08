@@ -155,7 +155,7 @@ namespace rdcboost
 #pragma region SetShader
 	template <typename WrappedShaderType, typename ShaderType>
 	inline static void SetShader_imp(
-		ID3D11DeviceContext* pActive, ShaderType* pShader, bool inCapture,
+		ID3D11DeviceContext* pActive, ShaderType* pShader,
 		void (STDMETHODCALLTYPE ID3D11DeviceContext::*pfn)(ShaderType*, ID3D11ClassInstance*const*, UINT))
 	{
 		if (pShader == NULL)
@@ -164,44 +164,44 @@ namespace rdcboost
 		}
 		else
 		{
-			ShaderType* pUnwrapped = UnwrapSelf(pShader, inCapture);
+			ShaderType* pUnwrapped = UnwrapSelf(pShader);
 			(pActive->*pfn)(pUnwrapped, NULL, 0);
 		}
 	}
 
 	void WrappedD3D11Context::VSSetShader(ID3D11VertexShader *pVertexShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
-		SetShader_imp<WrappedD3D11VertexShader>(GetActivePtr(), pVertexShader, InCapture(),
+		SetShader_imp<WrappedD3D11VertexShader>(GetActivePtr(), pVertexShader, 
 												&ID3D11DeviceContext::VSSetShader);
 	}
 
 	void WrappedD3D11Context::HSSetShader(ID3D11HullShader *pHullShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
-		SetShader_imp<WrappedD3D11HullShader>(GetActivePtr(), pHullShader, InCapture(),
+		SetShader_imp<WrappedD3D11HullShader>(GetActivePtr(), pHullShader, 
 												&ID3D11DeviceContext::HSSetShader);
 	}
 
 	void WrappedD3D11Context::DSSetShader(ID3D11DomainShader *pDomainShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
-		SetShader_imp<WrappedD3D11DomainShader>(GetActivePtr(), pDomainShader, InCapture(),
+		SetShader_imp<WrappedD3D11DomainShader>(GetActivePtr(), pDomainShader, 
 												&ID3D11DeviceContext::DSSetShader);
 	}
 
 	void WrappedD3D11Context::GSSetShader(ID3D11GeometryShader *pShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
-		SetShader_imp<WrappedD3D11GeometryShader>(GetActivePtr(), pShader, InCapture(),
+		SetShader_imp<WrappedD3D11GeometryShader>(GetActivePtr(), pShader, 
 												&ID3D11DeviceContext::GSSetShader);
 	}
 
 	void WrappedD3D11Context::PSSetShader(ID3D11PixelShader *pPixelShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
-		SetShader_imp<WrappedD3D11PixelShader>(GetActivePtr(), pPixelShader, InCapture(),
+		SetShader_imp<WrappedD3D11PixelShader>(GetActivePtr(), pPixelShader, 
 												&ID3D11DeviceContext::PSSetShader);
 	}
 
 	void WrappedD3D11Context::CSSetShader(ID3D11ComputeShader *pComputeShader, ID3D11ClassInstance *const *ppClassInstances, UINT NumClassInstances)
 	{
-		SetShader_imp<WrappedD3D11ComputeShader>(GetActivePtr(), pComputeShader, InCapture(),
+		SetShader_imp<WrappedD3D11ComputeShader>(GetActivePtr(), pComputeShader, 
 												&ID3D11DeviceContext::CSSetShader);
 	}
 #pragma endregion SetShader

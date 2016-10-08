@@ -812,7 +812,8 @@ namespace rdcboost
 			/* [annotation] */
 			_Out_opt_  ID3D11CommandList **ppCommandList);
 
-		ID3D11DeviceContext* GetActivePtr();
+		ID3D11DeviceContext* GetActivePtr() { return GetReal(); }
+
 
 	public:
 		void SaveState(SDeviceContextState* pState);
@@ -823,7 +824,6 @@ namespace rdcboost
 		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 
 	private:
-		bool InCapture();
 		void SetConstantBuffers_imp(UINT StartSlot, UINT NumBuffers, 
 									ID3D11Buffer *const *ppConstantBuffers,
 									void (STDMETHODCALLTYPE ID3D11DeviceContext::* pfn)(UINT, UINT, ID3D11Buffer*const*));
@@ -839,7 +839,7 @@ namespace rdcboost
 		template <typename UnwrappedType>
 		UnwrappedType* Unwrap(UnwrappedType* pWrapped)
 		{
-			return UnwrapSelf(pWrapped, InCapture());
+			return UnwrapSelf(pWrapped);
 		}
 
 		template <typename UnwrappedType>

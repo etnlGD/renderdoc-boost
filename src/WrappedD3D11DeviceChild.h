@@ -46,23 +46,24 @@ namespace rdcboost
 	};
 
 	template <typename UnwrapType>
-	UnwrapType* UnwrapDeviceChild(ID3D11DeviceChild* pWrapped, bool rdcWrapped)
+	UnwrapType* UnwrapDeviceChild(ID3D11DeviceChild* pWrapped)
 	{
 		if (pWrapped == NULL)
 			return NULL;
 
-		WrappedD3D11DeviceChildBase* base = (WrappedD3D11DeviceChildBase*)pWrapped;
+		WrappedD3D11DeviceChildBase* base = 
+			(WrappedD3D11DeviceChildBase*)(WrappedD3D11DeviceChild<UnwrapType>*)(pWrapped);
 		return (UnwrapType*) base->GetRealDeviceChild();
 	}
 
 	template <typename UnwrapType>
-	UnwrapType* UnwrapSelf(UnwrapType* pWrapped, bool rdcWrapped)
+	UnwrapType* UnwrapSelf(UnwrapType* pWrapped)
 	{
-		return UnwrapDeviceChild<UnwrapType>(pWrapped, rdcWrapped);
+		return UnwrapDeviceChild<UnwrapType>(pWrapped);
 	}
 
 	template <typename NestedType>
-	class WrappedD3D11DeviceChild : public NestedType, public WrappedD3D11DeviceChildBase
+	class WrappedD3D11DeviceChild : public WrappedD3D11DeviceChildBase, public NestedType
 	{
 	public:
 		WrappedD3D11DeviceChild(NestedType* pReal, WrappedD3D11Device* pDevice) :

@@ -309,6 +309,11 @@ namespace rdcboost
 
 		virtual UINT STDMETHODCALLTYPE GetExceptionMode(void);
 
+		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
+
+		virtual ULONG STDMETHODCALLTYPE AddRef(void);
+
+		virtual ULONG STDMETHODCALLTYPE Release(void);
 
 	public:
 		void SwitchToDevice(ID3D11Device* pNewDevice);
@@ -316,6 +321,8 @@ namespace rdcboost
 		ID3D11Device* GetReal() { return m_pReal; }
 
 		bool InCapture();
+
+		ID3D11Texture2D* GetWrappedSwapChainBuffer(ID3D11Texture2D *realSurface);
 
 		template <typename T>
 		T* GetWrapper(T* ptr)
@@ -326,7 +333,7 @@ namespace rdcboost
 				if (it != m_BackRefs.end())
 				{
 					((WrappedD3D11DeviceChild<T>*)it->second)->AddRef();
-					return (T*)it->second;
+					return (T*) (WrappedD3D11DeviceChild<T>*) it->second;
 				}
 			}
 			
@@ -339,6 +346,7 @@ namespace rdcboost
 		WrappedD3D11Context* m_pWrappedContext;
 		std::map<ID3D11DeviceChild*, class WrappedD3D11DeviceChildBase*> m_BackRefs;
 		PrivateDataMap m_PrivateDatas;
+		unsigned int m_Ref;
 	};
 }
 

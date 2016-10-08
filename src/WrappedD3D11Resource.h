@@ -8,7 +8,10 @@ namespace rdcboost
 	class WrappedD3D11Resource : public WrappedD3D11DeviceChild<NestedType>
 	{
 	public:
-		WrappedD3D11Resource(NestedType* pReal, WrappedD3D11Device* pDevice);
+		WrappedD3D11Resource(NestedType* pReal, WrappedD3D11Device* pDevice) :
+			WrappedD3D11DeviceChild(pReal, pDevice)
+		{
+		}
 
 		virtual void STDMETHODCALLTYPE GetType(D3D11_RESOURCE_DIMENSION *pResourceDimension)
 		{
