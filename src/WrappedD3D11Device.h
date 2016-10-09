@@ -324,6 +324,11 @@ namespace rdcboost
 
 		ID3D11Texture2D* GetWrappedSwapChainBuffer(ID3D11Texture2D *realSurface);
 
+		void OnDeviceChildReleased(ID3D11DeviceChild* pChild)
+		{
+			m_BackRefs.erase(pChild);
+		}
+
 		template <typename T>
 		T* GetWrapper(T* ptr)
 		{

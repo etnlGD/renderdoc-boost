@@ -25,8 +25,8 @@ namespace rdcboost
 
 	WrappedD3D11Device::~WrappedD3D11Device()
 	{
+		Assert(m_pWrappedContext == NULL);
 		m_pReal->Release();
-		m_pWrappedContext->Release();
 		if (m_pRDCDevice != NULL)
 			m_pRDCDevice->Release();
 	}
@@ -40,7 +40,7 @@ namespace rdcboost
 
 		ID3D11Buffer* pRealBuffer = NULL;
 		HRESULT ret = m_pReal->CreateBuffer(pDesc, pInitialData, &pRealBuffer);
-		if (SUCCEEDED(ret) && pRealBuffer)
+		if (pRealBuffer)
 		{
 			WrappedD3D11Buffer* wrapped = new WrappedD3D11Buffer(pRealBuffer, this);
 			*ppBuffer = wrapped;
@@ -64,7 +64,7 @@ namespace rdcboost
 
 		ID3D11Texture1D* pRealTex1D = NULL;
 		HRESULT ret = m_pReal->CreateTexture1D(pDesc, pInitialData, &pRealTex1D);
-		if (SUCCEEDED(ret) && pRealTex1D)
+		if (pRealTex1D)
 		{
 			WrappedD3D11Texture1D* wrapped = new WrappedD3D11Texture1D(pRealTex1D, this);
 			*ppTexture1D = wrapped;
@@ -88,7 +88,7 @@ namespace rdcboost
 
 		ID3D11Texture2D* pRealTex2D = NULL;
 		HRESULT ret = m_pReal->CreateTexture2D(pDesc, pInitialData, &pRealTex2D);
-		if (SUCCEEDED(ret) && pRealTex2D)
+		if (pRealTex2D)
 		{
 			WrappedD3D11Texture2D* wrapped = new WrappedD3D11Texture2D(pRealTex2D, this);
 			*ppTexture2D = wrapped;
@@ -112,7 +112,7 @@ namespace rdcboost
 
 		ID3D11Texture3D* pRealTex3D = NULL;
 		HRESULT ret = m_pReal->CreateTexture3D(pDesc, pInitialData, &pRealTex3D);
-		if (SUCCEEDED(ret) && pRealTex3D)
+		if (pRealTex3D)
 		{
 			WrappedD3D11Texture3D* wrapped = new WrappedD3D11Texture3D(pRealTex3D, this);
 			*ppTexture3D = wrapped;
@@ -137,7 +137,7 @@ namespace rdcboost
 
 		ID3D11ShaderResourceView* pRealSRV = NULL;
 		HRESULT ret = m_pReal->CreateShaderResourceView(pRealResource,  pDesc, &pRealSRV);
-		if (SUCCEEDED(ret) && pRealSRV)
+		if (pRealSRV)
 		{
 			WrappedD3D11ShaderResourceView* wrapped = 
 				new WrappedD3D11ShaderResourceView(pResource, pRealSRV, this);
@@ -164,7 +164,7 @@ namespace rdcboost
 		
 		ID3D11UnorderedAccessView* pRealUAV = NULL;
 		HRESULT ret = m_pReal->CreateUnorderedAccessView(pRealResource, pDesc, &pRealUAV);
-		if (SUCCEEDED(ret) && pRealUAV)
+		if (pRealUAV)
 		{
 			WrappedD3D11UnorderedAccessView* wrapped = 
 				new WrappedD3D11UnorderedAccessView(pResource, pRealUAV, this);
@@ -190,7 +190,7 @@ namespace rdcboost
 
 		ID3D11RenderTargetView* pRealRTV = NULL;
 		HRESULT ret = m_pReal->CreateRenderTargetView(pRealResource, pDesc, &pRealRTV);
-		if (SUCCEEDED(ret) && pRealRTV)
+		if (pRealRTV)
 		{
 			WrappedD3D11RenderTargetView* wrapped = 
 				new WrappedD3D11RenderTargetView(pResource, pRealRTV, this);
@@ -216,7 +216,7 @@ namespace rdcboost
 
 		ID3D11DepthStencilView* pRealDSV = NULL;
 		HRESULT ret = m_pReal->CreateDepthStencilView(pRealResource, pDesc, &pRealDSV);
-		if (SUCCEEDED(ret) && pRealDSV)
+		if (pRealDSV)
 		{
 			WrappedD3D11DepthStencilView* wrapped = 
 				new WrappedD3D11DepthStencilView(pResource, pRealDSV, this);
@@ -247,7 +247,7 @@ namespace rdcboost
 		HRESULT ret = m_pReal->CreateInputLayout(pInputElementDescs, NumElements, 
 												 pShaderBytecodeWithInputSignature, 
 												 BytecodeLength, &pRealLayout);
-		if (SUCCEEDED(ret) && pRealLayout)
+		if (pRealLayout)
 		{
 			WrappedD3D11InputLayout* wrapped = new WrappedD3D11InputLayout(pRealLayout, this);
 			pRealLayout->Release();
@@ -272,12 +272,12 @@ namespace rdcboost
 			LogError("Class linkage is not supported by now");
 
 		if (ppVertexShader == NULL)
-			return m_pReal->CreateVertexShader(pShaderBytecode, BytecodeLength,  NULL, NULL);
+			return m_pReal->CreateVertexShader(pShaderBytecode, BytecodeLength, NULL, NULL);
 
 		ID3D11VertexShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateVertexShader(pShaderBytecode, BytecodeLength, 
 												  NULL, &pRealShader);
-		if (SUCCEEDED(ret) && pRealShader)
+		if (pRealShader)
 		{
 			WrappedD3D11VertexShader* wrapped = 
 				new WrappedD3D11VertexShader(pShaderBytecode, BytecodeLength, pRealShader, this);
@@ -308,7 +308,7 @@ namespace rdcboost
 		ID3D11GeometryShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateGeometryShader(pShaderBytecode, BytecodeLength,
 												    NULL, &pRealShader);
-		if (SUCCEEDED(ret) && pRealShader)
+		if (pRealShader)
 		{
 			WrappedD3D11GeometryShader* wrapped = 
 				new WrappedD3D11GeometryShader(pShaderBytecode, BytecodeLength, pRealShader, this);
@@ -353,7 +353,7 @@ namespace rdcboost
 		ID3D11PixelShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreatePixelShader(pShaderBytecode, BytecodeLength,
 												 NULL, &pRealShader);
-		if (SUCCEEDED(ret) && pRealShader)
+		if (pRealShader)
 		{
 			WrappedD3D11PixelShader* wrapped = 
 				new WrappedD3D11PixelShader(pShaderBytecode, BytecodeLength, pRealShader, this);
@@ -384,7 +384,7 @@ namespace rdcboost
 		ID3D11HullShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateHullShader(pShaderBytecode, BytecodeLength,
 												NULL, &pRealShader);
-		if (SUCCEEDED(ret) && pRealShader)
+		if (pRealShader)
 		{
 			WrappedD3D11HullShader* wrapped = 
 				new WrappedD3D11HullShader(pShaderBytecode, BytecodeLength, pRealShader, this);
@@ -414,7 +414,7 @@ namespace rdcboost
 		ID3D11DomainShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateDomainShader(pShaderBytecode, BytecodeLength,
 												  NULL, &pRealShader);
-		if (SUCCEEDED(ret) && pRealShader)
+		if (pRealShader)
 		{
 			WrappedD3D11DomainShader* wrapped = 
 				new WrappedD3D11DomainShader(pShaderBytecode, BytecodeLength, pRealShader, this);
@@ -444,7 +444,7 @@ namespace rdcboost
 		ID3D11ComputeShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateComputeShader(pShaderBytecode, BytecodeLength,
 												   NULL, &pRealShader);
-		if (SUCCEEDED(ret) && pRealShader)
+		if (pRealShader)
 		{
 			WrappedD3D11ComputeShader* wrapped = 
 				new WrappedD3D11ComputeShader(pShaderBytecode, BytecodeLength, pRealShader, this);
@@ -478,7 +478,7 @@ namespace rdcboost
 
 		ID3D11BlendState* pRealState = NULL;
 		HRESULT ret = m_pReal->CreateBlendState(pBlendStateDesc, &pRealState);
-		if (SUCCEEDED(ret) && pRealState)
+		if (pRealState)
 		{
 			ID3D11BlendState* pWrapper = GetWrapper(pRealState);
 			if (pWrapper != NULL)
@@ -511,7 +511,7 @@ namespace rdcboost
 
 		ID3D11DepthStencilState* pRealState = NULL;
 		HRESULT ret = m_pReal->CreateDepthStencilState(pDepthStencilDesc, &pRealState);
-		if (SUCCEEDED(ret) && pRealState)
+		if (pRealState)
 		{
 			ID3D11DepthStencilState* pWrapper = GetWrapper(pRealState);
 			if (pWrapper != NULL)
@@ -544,7 +544,7 @@ namespace rdcboost
 
 		ID3D11RasterizerState* pRealState = NULL;
 		HRESULT ret = m_pReal->CreateRasterizerState(pRasterizerDesc, &pRealState);
-		if (SUCCEEDED(ret) && pRealState)
+		if (pRealState)
 		{
 			ID3D11RasterizerState* pWrapper = GetWrapper(pRealState);
 			if (pWrapper != NULL)
@@ -576,7 +576,7 @@ namespace rdcboost
 
 		ID3D11SamplerState* pRealState = NULL;
 		HRESULT ret = m_pReal->CreateSamplerState(pSamplerDesc, &pRealState);
-		if (SUCCEEDED(ret) && pRealState)
+		if (pRealState)
 		{
 			ID3D11SamplerState* pWrapper = GetWrapper(pRealState);
 			if (pWrapper != NULL)
@@ -608,7 +608,7 @@ namespace rdcboost
 
 		ID3D11Query* pRealQuery = NULL;
 		HRESULT ret = m_pReal->CreateQuery(pQueryDesc, &pRealQuery);
-		if (SUCCEEDED(ret) && pRealQuery)
+		if (pRealQuery)
 		{
 			WrappedD3D11Query* wrapped = new WrappedD3D11Query(pRealQuery, this);
 			pRealQuery->Release();
@@ -631,7 +631,7 @@ namespace rdcboost
 
 		ID3D11Predicate* pRealPredicate = NULL;
 		HRESULT ret = m_pReal->CreatePredicate(pPredicateDesc, &pRealPredicate);
-		if (SUCCEEDED(ret) && pRealPredicate)
+		if (pRealPredicate)
 		{
 			WrappedD3D11Predicate* wrapped = new WrappedD3D11Predicate(pRealPredicate, this);
 			pRealPredicate->Release();
@@ -654,7 +654,7 @@ namespace rdcboost
 
 		ID3D11Counter* pRealCounter = NULL;
 		HRESULT ret = m_pReal->CreateCounter(pCounterDesc, &pRealCounter);
-		if (SUCCEEDED(ret) && pRealCounter)
+		if (pRealCounter)
 		{
 			WrappedD3D11Counter* wrapped = new WrappedD3D11Counter(pRealCounter, this);
 			pRealCounter->Release();
@@ -676,6 +676,7 @@ namespace rdcboost
 
 		if (ppDeferredContext)
 			*ppDeferredContext = NULL;
+
 		return E_FAIL;
 	}
 
@@ -802,8 +803,18 @@ namespace rdcboost
 	ULONG STDMETHODCALLTYPE WrappedD3D11Device::Release(void)
 	{
 		unsigned int ret = InterlockedDecrement(&m_Ref);
-		if (ret == 0)
+		if (ret == 1)
+		{
+			auto context = m_pWrappedContext;
+			m_pWrappedContext = NULL;
+			if (context->Release() == 0)
+				return 0;
+		}
+		else if (ret == 0)
+		{
 			delete this;
+		}
+
 		return ret;
 	}
 
@@ -831,6 +842,7 @@ namespace rdcboost
 		m_BackRefs.swap(newBackRefs);
 
 		// 4. restore states of the old immediate device context to the new one.
+		m_pWrappedContext->SwitchToDevice(pNewDevice);
 		m_pWrappedContext->RestoreState(&deviceContextState);
 
 		pNewDevice->AddRef();

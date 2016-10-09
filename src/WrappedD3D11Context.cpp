@@ -804,8 +804,6 @@ namespace rdcboost
 		{
 			ID3D11DeviceContext* pNewImmediateContext = NULL;
 			pNewDevice->GetImmediateContext(&pNewImmediateContext);
-			// TODO_wzq copy pipeline state to new immediate context.
-
 			return pNewImmediateContext;
 		}
 		else
