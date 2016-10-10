@@ -176,10 +176,14 @@ namespace rdcboost
 		ctx->OMSetDepthStencilState(m_pDepthStencilState, m_StencilRef);
 
 		// -1 indicates to keep the current offset.
-		UINT UAVInitialCounts[eUAVCount] = { -1 };
-		ctx->OMSetRenderTargetsAndUnorderedAccessViews(
-			eRTVCount, m_pRenderTargetViews, m_pDepthStencilView,
-			0, eUAVCount, m_pUnorderedAccessViews, UAVInitialCounts);
+		UINT UAVInitialCounts[eUAVCount];
+		memset(UAVInitialCounts, -1, sizeof(UAVInitialCounts));
+
+		ctx->OMSetRenderTargets(eRTVCount, m_pRenderTargetViews, m_pDepthStencilView);
+		// TODO_wzq 这个函数不能乱调
+// 		ctx->OMSetRenderTargetsAndUnorderedAccessViews(
+// 			eRTVCount, m_pRenderTargetViews, m_pDepthStencilView,
+// 			0, eUAVCount, m_pUnorderedAccessViews, UAVInitialCounts);
 		ctx->CSSetUnorderedAccessViews(0, eUAVCount, m_pCSUnorderedAccessViews, UAVInitialCounts);
 	}
 }

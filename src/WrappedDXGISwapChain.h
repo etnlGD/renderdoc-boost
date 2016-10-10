@@ -78,6 +78,11 @@ namespace rdcboost
 
 		virtual ULONG STDMETHODCALLTYPE Release(void);
 
+		ULONG GetRef() { return m_Ref; }
+
+	public:
+		void SwitchToDevice(IDXGISwapChain* pNewSwapChain);
+
 	private:
 		WrappedD3D11Device* m_pWrappedDevice;
 		IDXGISwapChain* m_pReal;

@@ -2,6 +2,7 @@
 #include "WrappedDXGISwapChain.h"
 #include "WrappedD3D11Device.h"
 #include "WrappedD3D11Context.h"
+#include "DeviceCreateParams.h"
 
 namespace rdcboost
 {
@@ -12,6 +13,9 @@ namespace rdcboost
 		IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice, 
 		D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
 	{
+		SDeviceCreateParams params(pAdapter, DriverType, Software, Flags, 
+								   pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc);
+		
 		IDXGISwapChain* pRealSwapChain = NULL;
 		ID3D11Device* pRealDevice = NULL;
 		HRESULT res = ::D3D11CreateDeviceAndSwapChain(
@@ -19,8 +23,9 @@ namespace rdcboost
 							FeatureLevels, SDKVersion, pSwapChainDesc, &pRealSwapChain,
 							&pRealDevice, pFeatureLevel, NULL);
 
-		WrappedD3D11Device* wrappedDevice = new WrappedD3D11Device(pRealDevice);
+		WrappedD3D11Device* wrappedDevice = new WrappedD3D11Device(pRealDevice, params);
 		WrappedDXGISwapChain* wrappedSwapChain = new WrappedDXGISwapChain(pRealSwapChain, wrappedDevice);
+		wrappedDevice->InitSwapChain(wrappedSwapChain);
 		pRealDevice->Release();
 		pRealSwapChain->Release();
 
@@ -29,6 +34,22 @@ namespace rdcboost
 		wrappedDevice->GetImmediateContext(ppImmediateContext);
 
 		return res;
+	}
+
+	void TriggerCapture(ID3D11Device* pDevice)
+	{
+		WrappedD3D11Device* pWrappedDevice = static_cast<WrappedD3D11Device*>(pDevice);
+		const SDeviceCreateParams& params = pWrappedDevice->GetDeviceCreateParams();
+
+		IDXGISwapChain* pRealSwapChain = NULL;
+		ID3D11Device* pRealDevice = NULL;
+		HRESULT res = ::D3D11CreateDeviceAndSwapChain(
+						params.pAdapter, params.DriverType, params.Software,
+						params.Flags, params.pFeatureLevels, params.FeatureLevels,
+						params.SDKVersion, &params.SwapChainDesc, 
+						&pRealSwapChain, &pRealDevice, NULL, NULL);
+
+		pWrappedDevice->SwitchToDevice(pRealDevice, pRealSwapChain);
 	}
 
 }

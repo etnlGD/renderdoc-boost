@@ -2,14 +2,19 @@
 #include <d3d11.h>
 #include <map>
 #include "PrivateDataMap.h"
+#include "DeviceCreateParams.h"
+#include <vector>
 
 namespace rdcboost
 {
+	class WrappedD3D11Texture2D;
 	class WrappedD3D11Context;
+	class WrappedDXGISwapChain;
+	class WrappedD3D11DeviceChildBase;
 	class WrappedD3D11Device : public ID3D11Device
 	{
 	public:
-		WrappedD3D11Device(ID3D11Device* pRealDevice);
+		WrappedD3D11Device(ID3D11Device* pRealDevice, const SDeviceCreateParams& params);
 
 		virtual ~WrappedD3D11Device();
 
@@ -316,29 +321,47 @@ namespace rdcboost
 		virtual ULONG STDMETHODCALLTYPE Release(void);
 
 	public:
-		void SwitchToDevice(ID3D11Device* pNewDevice);
+		void SwitchToDevice(ID3D11Device* pNewDevice, IDXGISwapChain* pNewSwapChain);
 
 		ID3D11Device* GetReal() { return m_pReal; }
 
 		bool InCapture();
 
-		ID3D11Texture2D* GetWrappedSwapChainBuffer(ID3D11Texture2D *realSurface);
+		ID3D11Texture2D* GetWrappedSwapChainBuffer(UINT Buffer, ID3D11Texture2D *realSurface);
 
-		void OnDeviceChildReleased(ID3D11DeviceChild* pChild)
+		void InitSwapChain(WrappedDXGISwapChain* pWrappedSwapchain);
+
+		void TryToRelease();
+		
+		void OnDeviceChildReleased(ID3D11DeviceChild* pChild);
+
+		const SDeviceCreateParams& GetDeviceCreateParams() const
 		{
-			m_BackRefs.erase(pChild);
+			return m_DeviceCreateParams;
 		}
 
 		template <typename T>
 		T* GetWrapper(T* ptr)
 		{
-			if (ptr != NULL)
+			if (ptr == NULL) return NULL;
+
+			auto it = m_BackRefs.find(ptr);
+			if (it != m_BackRefs.end())
 			{
-				auto it = m_BackRefs.find(ptr);
-				if (it != m_BackRefs.end())
+				((WrappedD3D11DeviceChild<T>*)it->second)->AddRef();
+				return static_cast<T*>(
+						static_cast<WrappedD3D11DeviceChild<T>*>(it->second));
+			}
+			else
+			{
+				ID3D11DeviceChild* ptrChild = static_cast<ID3D11DeviceChild*>(ptr);
+				for (auto it = m_SwapChainBuffers.begin(); it != m_SwapChainBuffers.end(); ++it)
 				{
-					((WrappedD3D11DeviceChild<T>*)it->second)->AddRef();
-					return (T*) (WrappedD3D11DeviceChild<T>*) it->second;
+					if (*it != NULL && 
+						static_cast<ID3D11DeviceChild*>((*it)->GetReal()) == ptrChild)
+					{
+						return (T*) *it;
+					}
 				}
 			}
 			
@@ -349,8 +372,11 @@ namespace rdcboost
 		ID3D11Device* m_pReal;
 		ID3D11Device* m_pRDCDevice;
 		WrappedD3D11Context* m_pWrappedContext;
-		std::map<ID3D11DeviceChild*, class WrappedD3D11DeviceChildBase*> m_BackRefs;
+		WrappedDXGISwapChain* m_pWrappedSwapChain;
+		std::map<ID3D11DeviceChild*, WrappedD3D11DeviceChildBase*> m_BackRefs;
+		std::vector<WrappedD3D11Texture2D*> m_SwapChainBuffers;
 		PrivateDataMap m_PrivateDatas;
+		SDeviceCreateParams m_DeviceCreateParams;
 		unsigned int m_Ref;
 	};
 }

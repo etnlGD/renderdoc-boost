@@ -16,6 +16,21 @@ namespace rdcboost
 		memset(m_SOOffsets, 0, sizeof(m_SOOffsets));
 	}
 
+	ULONG STDMETHODCALLTYPE WrappedD3D11Context::Release(void)
+	{
+		unsigned int ret = InterlockedDecrement(&m_Ref);
+		if (ret == 1)
+		{
+			m_pWrappedDevice->TryToRelease();
+		}
+		else if (ret == 0)
+		{
+			delete this;
+		}
+
+		return ret;
+	}
+
 #pragma region SetConstantBuffers
 	void WrappedD3D11Context::SetConstantBuffers_imp(
 		UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers, 

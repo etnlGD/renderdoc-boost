@@ -69,6 +69,7 @@ namespace rdcboost
 
 	protected:
 		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
+		virtual void CopyToDeviceForSwapChainBuffer(ID3D11Device* pNewDevice, ID3D11Texture2D* pNewBuffer);
 	};
 
 	class WrappedD3D11Texture3D : public WrappedD3D11Resource<ID3D11Texture3D>

@@ -18,7 +18,7 @@ namespace rdcboost
 
 	ID3D11DeviceChild* WrappedD3D11DepthStencilView::CopyToDevice(ID3D11Device* pNewDevice)
 	{
-		auto pWrappedResource = (WrappedD3D11DeviceChildBase*)m_pWrappedResource;
+		auto pWrappedResource = ConvertToWrappedBase(m_pWrappedResource);
 		pWrappedResource->SwitchToDevice(pNewDevice);
 
 		D3D11_DEPTH_STENCIL_VIEW_DESC dsViewDesc;
@@ -26,8 +26,8 @@ namespace rdcboost
 
 		ID3D11DepthStencilView* pNewView = NULL;
 		HRESULT ret = pNewDevice->CreateDepthStencilView(
-						(ID3D11Resource*)pWrappedResource->GetRealDeviceChild(), &dsViewDesc, 
-						&pNewView);
+						static_cast<ID3D11Resource*>(pWrappedResource->GetRealDeviceChild()), 
+						&dsViewDesc, &pNewView);
 
 		if (FAILED(ret))
 			LogError("CreateDepthStencilView failed when CopyToDevice");
@@ -49,7 +49,7 @@ namespace rdcboost
 
 	ID3D11DeviceChild* WrappedD3D11RenderTargetView::CopyToDevice(ID3D11Device* pNewDevice)
 	{
-		auto pWrappedResource = (WrappedD3D11DeviceChildBase*)m_pWrappedResource;
+		auto pWrappedResource = ConvertToWrappedBase(m_pWrappedResource);
 		pWrappedResource->SwitchToDevice(pNewDevice);
 
 		D3D11_RENDER_TARGET_VIEW_DESC rtViewDesc;
@@ -57,7 +57,8 @@ namespace rdcboost
 
 		ID3D11RenderTargetView* pNewView;
 		HRESULT ret = pNewDevice->CreateRenderTargetView(
-						(ID3D11Resource*)pWrappedResource->GetRealDeviceChild(), &rtViewDesc, 
+						static_cast<ID3D11Resource*>(pWrappedResource->GetRealDeviceChild()), 
+						&rtViewDesc, 
 						&pNewView);
 
 		if (FAILED(ret))
@@ -80,7 +81,7 @@ namespace rdcboost
 
 	ID3D11DeviceChild* WrappedD3D11ShaderResourceView::CopyToDevice(ID3D11Device* pNewDevice)
 	{
-		auto pWrappedResource = (WrappedD3D11DeviceChildBase*)m_pWrappedResource;
+		auto pWrappedResource = ConvertToWrappedBase(m_pWrappedResource);
 		pWrappedResource->SwitchToDevice(pNewDevice);
 
 		D3D11_SHADER_RESOURCE_VIEW_DESC srViewDesc;
@@ -88,8 +89,8 @@ namespace rdcboost
 
 		ID3D11ShaderResourceView* pNewView;
 		HRESULT ret = pNewDevice->CreateShaderResourceView(
-						(ID3D11Resource*)pWrappedResource->GetRealDeviceChild(), &srViewDesc, 
-						&pNewView);
+						static_cast<ID3D11Resource*>(pWrappedResource->GetRealDeviceChild()), 
+						&srViewDesc, &pNewView);
 
 		if (FAILED(ret))
 			LogError("CreateShaderResourceView failed when CopyToDevice");
@@ -111,7 +112,7 @@ namespace rdcboost
 
 	ID3D11DeviceChild* WrappedD3D11UnorderedAccessView::CopyToDevice(ID3D11Device* pNewDevice)
 	{
-		auto pWrappedResource = (WrappedD3D11DeviceChildBase*)m_pWrappedResource;
+		auto pWrappedResource = ConvertToWrappedBase(m_pWrappedResource);
 		pWrappedResource->SwitchToDevice(pNewDevice);
 
 		D3D11_UNORDERED_ACCESS_VIEW_DESC uaViewDesc;
@@ -119,8 +120,8 @@ namespace rdcboost
 
 		ID3D11UnorderedAccessView* pNewView;
 		HRESULT ret = pNewDevice->CreateUnorderedAccessView(
-						(ID3D11Resource*)pWrappedResource->GetRealDeviceChild(), &uaViewDesc, 
-						&pNewView);
+						static_cast<ID3D11Resource*>(pWrappedResource->GetRealDeviceChild()), 
+						&uaViewDesc, &pNewView);
 
 		if (FAILED(ret))
 			LogError("CreateUnorderedAccessView failed when CopyToDevice");

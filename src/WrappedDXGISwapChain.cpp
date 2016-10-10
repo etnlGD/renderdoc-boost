@@ -11,11 +11,13 @@ namespace rdcboost
 		m_pWrappedDevice(pWrappedDevice), m_pReal(pReal), m_Ref(1)
 	{
 		m_pReal->AddRef();
+		m_pWrappedDevice->AddRef();
 	}
 
 	WrappedDXGISwapChain::~WrappedDXGISwapChain()
 	{
 		m_pReal->Release();
+		m_pWrappedDevice->Release();
 	}
 
 	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::GetBuffer(UINT Buffer, REFIID riid, 
@@ -44,7 +46,7 @@ namespace rdcboost
 
 		HRESULT ret = m_pReal->GetBuffer(Buffer, riid, ppSurface);
 
-		ID3D11Texture2D *realSurface = (ID3D11Texture2D *)*ppSurface;
+		ID3D11Texture2D *realSurface = static_cast<ID3D11Texture2D *>(*ppSurface);
 		ID3D11Texture2D *tex = realSurface;
 		if (FAILED(ret))
 		{
@@ -58,11 +60,14 @@ namespace rdcboost
 		}
 		else 
 		{
-			tex = m_pWrappedDevice->GetWrappedSwapChainBuffer(realSurface);
+			tex = m_pWrappedDevice->GetWrappedSwapChainBuffer(Buffer, realSurface);
 			realSurface->Release();
 		}
 
-		*ppSurface = tex;
+		if (riid == __uuidof(ID3D11Texture2D))
+			*ppSurface = static_cast<ID3D11Texture2D*>(tex);
+		else if (riid == __uuidof(ID3D11Resource))
+			*ppSurface = static_cast<ID3D11Resource*>(tex);
 
 		return ret;
 	}
@@ -135,9 +140,26 @@ namespace rdcboost
 	ULONG STDMETHODCALLTYPE WrappedDXGISwapChain::Release(void)
 	{
 		unsigned int ret = InterlockedDecrement(&m_Ref);
-		if (ret == 0)
+		if (ret == 1)
+		{
+			m_pWrappedDevice->TryToRelease();
+		}
+		else if (ret == 0)
+		{
 			delete this;
+		}
+
 		return ret;
+	}
+
+	void WrappedDXGISwapChain::SwitchToDevice(IDXGISwapChain* pNewSwapChain)
+	{
+		if (m_pReal != pNewSwapChain)
+		{ // TODO_wzq handle resize/fullscreen
+			m_pReal->Release();
+			m_pReal = pNewSwapChain;
+			pNewSwapChain->AddRef();
+		}
 	}
 
 }

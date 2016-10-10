@@ -8,12 +8,15 @@
 #include <assert.h>
 #include "Log.h"
 #include "DeviceContextState.h"
+#include "WrappedDXGISwapChain.h"
 
 namespace rdcboost
 {
 
-	WrappedD3D11Device::WrappedD3D11Device(ID3D11Device* pRealDevice) :
-		m_pReal(pRealDevice), m_pRDCDevice(NULL), m_Ref(1)
+	WrappedD3D11Device::WrappedD3D11Device(
+		ID3D11Device* pRealDevice, const SDeviceCreateParams& params) :
+		m_pReal(pRealDevice), m_pRDCDevice(NULL), m_Ref(1), m_DeviceCreateParams(params),
+		m_pWrappedSwapChain(NULL)
 	{
 		m_pReal->AddRef();
 
@@ -779,13 +782,13 @@ namespace rdcboost
 		if (riid == __uuidof(ID3D11Device))
 		{
 			AddRef();
-			*ppvObject = (ID3D11Device *)this;
+			*ppvObject = static_cast<ID3D11Device*>(this);
 			return S_OK;
 		}
 		else if (riid == __uuidof(IUnknown))
 		{
 			AddRef();
-			*ppvObject = (IUnknown*) this;
+			*ppvObject = static_cast<IUnknown*>(this);
 			return S_OK;
 		}
 		else
@@ -803,22 +806,15 @@ namespace rdcboost
 	ULONG STDMETHODCALLTYPE WrappedD3D11Device::Release(void)
 	{
 		unsigned int ret = InterlockedDecrement(&m_Ref);
-		if (ret == 1)
+		if (ret == 2) // only soft refs.
 		{
-			auto context = m_pWrappedContext;
-			m_pWrappedContext = NULL;
-			if (context->Release() == 0)
-				return 0;
-		}
-		else if (ret == 0)
-		{
-			delete this;
+			TryToRelease();
 		}
 
 		return ret;
 	}
 
-	void WrappedD3D11Device::SwitchToDevice(ID3D11Device* pNewDevice)
+	void WrappedD3D11Device::SwitchToDevice(ID3D11Device* pNewDevice, IDXGISwapChain* pNewSwapChain)
 	{
 		// 1. copy states of the old device to the new one.
 		pNewDevice->SetExceptionMode(m_pReal->GetExceptionMode());
@@ -841,6 +837,18 @@ namespace rdcboost
 
 		m_BackRefs.swap(newBackRefs);
 
+		for (UINT Buffer = 0; Buffer < m_SwapChainBuffers.size(); ++Buffer)
+		{
+			if (m_SwapChainBuffers[Buffer] != NULL)
+			{
+				ID3D11Texture2D* pSurface = NULL;
+				pNewSwapChain->GetBuffer(Buffer, __uuidof(ID3D11Texture2D), (void**)&pSurface);
+				Assert(pSurface != NULL);
+
+				m_SwapChainBuffers[Buffer]->SwitchToDeviceForSwapChainBuffer(pNewDevice, pSurface);
+			}
+		}
+
 		// 4. restore states of the old immediate device context to the new one.
 		m_pWrappedContext->SwitchToDevice(pNewDevice);
 		m_pWrappedContext->RestoreState(&deviceContextState);
@@ -848,19 +856,64 @@ namespace rdcboost
 		pNewDevice->AddRef();
 		m_pReal = pNewDevice;
 		pNewContext->Release();
+
+		m_pWrappedSwapChain->SwitchToDevice(pNewSwapChain);
 	}
 
-	ID3D11Texture2D* WrappedD3D11Device::GetWrappedSwapChainBuffer(ID3D11Texture2D *realSurface)
+	ID3D11Texture2D* WrappedD3D11Device::GetWrappedSwapChainBuffer(UINT Buffer, 
+																   ID3D11Texture2D *realSurface)
 	{
-		ID3D11Texture2D* tex = GetWrapper(realSurface);
+		Assert(realSurface != NULL);
+		ID3D11Texture2D* tex = NULL;
+		if (Buffer < m_SwapChainBuffers.size() && m_SwapChainBuffers[Buffer] != NULL)
+		{
+			Assert(m_SwapChainBuffers[Buffer]->GetReal() == realSurface);
+			tex = m_SwapChainBuffers[Buffer];
+			tex->AddRef();
+		}
+
 		if (tex == NULL)
 		{
-			WrappedD3D11Texture2D* wrapped = new WrappedD3D11Texture2D(realSurface, this);
-			m_BackRefs[realSurface] = wrapped;
-			tex = wrapped;
+			m_SwapChainBuffers.resize(Buffer + 1);
+			tex = m_SwapChainBuffers[Buffer] = new WrappedD3D11Texture2D(realSurface, this);
 		}
 
 		return tex;
+	}
+
+	void WrappedD3D11Device::InitSwapChain(WrappedDXGISwapChain* pWrappedSwapchain)
+	{
+		m_pWrappedSwapChain = pWrappedSwapchain;
+		m_pWrappedSwapChain->AddRef();
+	}
+
+	void WrappedD3D11Device::TryToRelease()
+	{
+		if (m_Ref == 2 && m_pWrappedContext->GetRef() == 1 &&
+			m_pWrappedSwapChain->GetRef() == 1)
+		{
+			m_pWrappedContext->Release();
+			m_pWrappedContext = NULL;
+
+			m_pWrappedSwapChain->Release();
+			m_pWrappedSwapChain = NULL;
+
+			delete this;
+		}
+	}
+
+	void WrappedD3D11Device::OnDeviceChildReleased(ID3D11DeviceChild* pChild)
+	{
+		if (m_BackRefs.erase(pChild) == 0)
+		{
+			auto it = std::find(m_SwapChainBuffers.begin(), m_SwapChainBuffers.end(), 
+								static_cast<WrappedD3D11Texture2D*>(pChild));
+
+			if (it != m_SwapChainBuffers.end())
+			{
+				*it = NULL;
+			}
+		}
 	}
 
 }

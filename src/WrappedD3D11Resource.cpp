@@ -181,6 +181,40 @@ namespace rdcboost
 				GetReal(), GetRealDevice(), pNewDevice, CopyTraits2D());
 	}
 
+	void WrappedD3D11Texture2D::CopyToDeviceForSwapChainBuffer(ID3D11Device* pNewDevice, 
+															   ID3D11Texture2D* pNewBuffer)
+	{
+		D3D11_TEXTURE2D_DESC myDesc;
+		GetReal()->GetDesc(&myDesc);
+		if (myDesc.SampleDesc.Count != 1)
+		{
+			// multisampled texture can't be created with initial data.
+			LogError("Multisampled texture is not supported by now.");
+			return;
+		}
+
+		struct CopyTraits2D
+		{
+			UINT GetSubresCount(const D3D11_TEXTURE2D_DESC* desc) const
+			{
+				return desc->ArraySize * desc->MipLevels;
+			}
+
+			HRESULT CreateResource(ID3D11Device* pDevice, const D3D11_TEXTURE2D_DESC *pDesc,
+								   const D3D11_SUBRESOURCE_DATA *pInitialData,
+								   ID3D11Texture2D **ppTexture2D) const
+			{
+				*ppTexture2D = pNewBuffer;
+				return S_OK;
+			}
+
+			ID3D11Texture2D* pNewBuffer;
+		};
+
+		CopyResource<D3D11_TEXTURE2D_DESC>(
+			GetReal(), GetRealDevice(), pNewDevice, CopyTraits2D{ pNewBuffer });
+	}
+
 	WrappedD3D11Texture3D::WrappedD3D11Texture3D(ID3D11Texture3D* pReal, WrappedD3D11Device* pDevice) :
 		WrappedD3D11Resource(pReal, pDevice)
 	{

@@ -11,6 +11,10 @@ namespace rdcboost
 	public:
 		WrappedD3D11Context(ID3D11DeviceContext* pRealContext, WrappedD3D11Device* pWrappedDevice);
 
+		virtual ULONG STDMETHODCALLTYPE Release(void);
+
+		ULONG GetRef() { return m_Ref; }
+
 		virtual void STDMETHODCALLTYPE VSSetConstantBuffers(
 			/* [annotation] */
 			_In_range_(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1)  UINT StartSlot,

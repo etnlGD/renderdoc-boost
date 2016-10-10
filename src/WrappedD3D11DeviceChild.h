@@ -36,9 +36,6 @@ namespace rdcboost
 		}
 
 	protected:
-		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice) = 0;
-
-	protected:
 		WrappedD3D11Device* const m_pWrappedDevice;
 		ID3D11DeviceChild* m_pReal;
 
@@ -50,23 +47,6 @@ namespace rdcboost
 		int m_ResourceIdx;
 		static int sResourceIdx;
 	};
-
-	template <typename UnwrapType>
-	UnwrapType* UnwrapDeviceChild(ID3D11DeviceChild* pWrapped)
-	{
-		if (pWrapped == NULL)
-			return NULL;
-
-		WrappedD3D11DeviceChildBase* base = 
-			(WrappedD3D11DeviceChildBase*)(WrappedD3D11DeviceChild<UnwrapType>*)(pWrapped);
-		return (UnwrapType*) base->GetRealDeviceChild();
-	}
-
-	template <typename UnwrapType>
-	UnwrapType* UnwrapSelf(UnwrapType* pWrapped)
-	{
-		return UnwrapDeviceChild<UnwrapType>(pWrapped);
-	}
 
 	template <typename NestedType>
 	class WrappedD3D11DeviceChild : public WrappedD3D11DeviceChildBase, public NestedType
@@ -132,9 +112,21 @@ namespace rdcboost
 			return GetReal()->SetPrivateDataInterface(guid, pData);
 		}
 
-		NestedType* GetReal() { return (NestedType*) m_pReal; }
+		NestedType* GetReal() { return static_cast<NestedType*>(m_pReal); }
 
 		NestedType* GetRealOrRDCWrapped(bool rdcWrapped);
+
+		void SwitchToDeviceForSwapChainBuffer(ID3D11Device* pNewDevice, NestedType* pNewBuffer)
+		{
+			if (m_pRealDevice == pNewDevice)
+				return;
+
+			CopyToDeviceForSwapChainBuffer(pNewDevice, pNewBuffer);
+			m_PrivateData.CopyPrivateData(pNewBuffer);
+			m_pReal->Release();
+			m_pReal = pNewBuffer;
+			m_pRealDevice = pNewDevice;
+		}
 
 		virtual void SwitchToDevice(ID3D11Device* pNewDevice)
 		{
@@ -142,15 +134,43 @@ namespace rdcboost
 				return;
 
 			ID3D11DeviceChild* pCopied = CopyToDevice(pNewDevice);
+			Assert(pCopied != NULL);
 			m_PrivateData.CopyPrivateData(pCopied);
 			m_pReal->Release();
 			m_pReal = pCopied;
 			m_pRealDevice = pNewDevice;
 		}
 
-	private:
+	protected:
+		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice) = 0;
+		virtual void CopyToDeviceForSwapChainBuffer(ID3D11Device* pNewDevice, NestedType* pNewBuffer) {}
+
+	protected:
 		unsigned int m_Ref;
+
+	private:
 		PrivateDataMap m_PrivateData;
 	};
+
+	inline WrappedD3D11DeviceChildBase* ConvertToWrappedBase(ID3D11DeviceChild* pWrapped)
+	{
+		return static_cast<WrappedD3D11DeviceChild<ID3D11DeviceChild>*>(pWrapped);
+	}
+
+	template <typename UnwrapType>
+	UnwrapType* UnwrapDeviceChild(ID3D11DeviceChild* pWrapped)
+	{
+		if (pWrapped == NULL)
+			return NULL;
+
+		WrappedD3D11DeviceChildBase* base = ConvertToWrappedBase(pWrapped);
+		return static_cast<UnwrapType*>(base->GetRealDeviceChild());
+	}
+
+	template <typename UnwrapType>
+	UnwrapType* UnwrapSelf(UnwrapType* pWrapped)
+	{
+		return UnwrapDeviceChild<UnwrapType>(pWrapped);
+	}
 }
 

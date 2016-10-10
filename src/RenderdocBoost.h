@@ -9,5 +9,7 @@ namespace rdcboost
 		UINT SDKVersion, const DXGI_SWAP_CHAIN_DESC* pSwapChainDesc,
 		IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice,
 		D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext);
+
+	void TriggerCapture(ID3D11Device* pDevice);
 }
 
