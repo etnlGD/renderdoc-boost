@@ -820,23 +820,11 @@ namespace rdcboost
 		pNewDevice->SetExceptionMode(m_pReal->GetExceptionMode());
 		m_PrivateDatas.CopyPrivateData(pNewDevice);
 
-		ID3D11DeviceContext* pNewContext = NULL;
-		pNewDevice->GetImmediateContext(&pNewContext);
-
 		// 2. save states of the old immediate device context to the new one.
 		SDeviceContextState deviceContextState;
 		m_pWrappedContext->SaveState(&deviceContextState);
 
 		// 3. copy resources to the new device.
-		std::map<ID3D11DeviceChild*, WrappedD3D11DeviceChildBase*> newBackRefs;
-		for (auto it = m_BackRefs.begin(); it != m_BackRefs.end(); ++it)
-		{
-			it->second->SwitchToDevice(pNewDevice);
-			newBackRefs[it->second->GetRealDeviceChild()] = it->second;
-		}
-
-		m_BackRefs.swap(newBackRefs);
-
 		for (UINT Buffer = 0; Buffer < m_SwapChainBuffers.size(); ++Buffer)
 		{
 			if (m_SwapChainBuffers[Buffer] != NULL)
@@ -849,13 +837,22 @@ namespace rdcboost
 			}
 		}
 
+		std::map<ID3D11DeviceChild*, WrappedD3D11DeviceChildBase*> newBackRefs;
+		for (auto it = m_BackRefs.begin(); it != m_BackRefs.end(); ++it)
+		{
+			it->second->SwitchToDevice(pNewDevice);
+			newBackRefs[it->second->GetRealDeviceChild()] = it->second;
+		}
+
+		m_BackRefs.swap(newBackRefs);
+
 		// 4. restore states of the old immediate device context to the new one.
 		m_pWrappedContext->SwitchToDevice(pNewDevice);
 		m_pWrappedContext->RestoreState(&deviceContextState);
 
+		m_pReal->Release();
 		pNewDevice->AddRef();
 		m_pReal = pNewDevice;
-		pNewContext->Release();
 
 		m_pWrappedSwapChain->SwitchToDevice(pNewSwapChain);
 	}

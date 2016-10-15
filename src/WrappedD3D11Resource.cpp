@@ -204,15 +204,23 @@ namespace rdcboost
 								   const D3D11_SUBRESOURCE_DATA *pInitialData,
 								   ID3D11Texture2D **ppTexture2D) const
 			{
-				*ppTexture2D = pNewBuffer;
-				return S_OK;
+				if (pDevice == pNewDevice)
+				{
+					*ppTexture2D = pNewBuffer;
+					return S_OK;
+				}
+				else
+				{
+					return pDevice->CreateTexture2D(pDesc, pInitialData, ppTexture2D);
+				}
 			}
 
+			ID3D11Device* pNewDevice;
 			ID3D11Texture2D* pNewBuffer;
 		};
 
 		CopyResource<D3D11_TEXTURE2D_DESC>(
-			GetReal(), GetRealDevice(), pNewDevice, CopyTraits2D{ pNewBuffer });
+			GetReal(), GetRealDevice(), pNewDevice, CopyTraits2D{ pNewDevice, pNewBuffer });
 	}
 
 	WrappedD3D11Texture3D::WrappedD3D11Texture3D(ID3D11Texture3D* pReal, WrappedD3D11Device* pDevice) :
