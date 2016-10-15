@@ -6,6 +6,16 @@ namespace rdcboost
 	class WrappedD3D11Device;
 	class WrappedDXGISwapChain : public IDXGISwapChain
 	{
+		struct SResizeBufferParameter
+		{
+			bool Valid;
+			UINT BufferCount;
+			UINT Width;
+			UINT Height;
+			DXGI_FORMAT NewFormat;
+			UINT SwapChainFlags;
+		};
+
 	public:
 		WrappedDXGISwapChain(IDXGISwapChain* pReal, WrappedD3D11Device* pWrappedDevice);
 
@@ -54,10 +64,7 @@ namespace rdcboost
 
 		virtual HRESULT STDMETHODCALLTYPE ResizeBuffers(
 			UINT BufferCount, UINT Width, UINT Height,
-			DXGI_FORMAT NewFormat, UINT SwapChainFlags)
-		{
-			return m_pReal->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
-		}
+			DXGI_FORMAT NewFormat, UINT SwapChainFlags);
 
 		virtual HRESULT STDMETHODCALLTYPE ResizeTarget(const DXGI_MODE_DESC *pNewTargetParameters)
 		{
@@ -87,6 +94,8 @@ namespace rdcboost
 		WrappedD3D11Device* m_pWrappedDevice;
 		IDXGISwapChain* m_pReal;
 		unsigned int m_Ref;
+
+		SResizeBufferParameter m_ResizeParam;
 	};
 }
 

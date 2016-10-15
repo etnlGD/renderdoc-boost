@@ -16,7 +16,7 @@ namespace rdcboost
 	WrappedD3D11Device::WrappedD3D11Device(
 		ID3D11Device* pRealDevice, const SDeviceCreateParams& params) :
 		m_pReal(pRealDevice), m_pRDCDevice(NULL), m_Ref(1), m_DeviceCreateParams(params),
-		m_pWrappedSwapChain(NULL)
+		m_pWrappedSwapChain(NULL), m_bRenderDocDevice(false)
 	{
 		m_pReal->AddRef();
 
@@ -776,7 +776,7 @@ namespace rdcboost
 		return m_pReal->GetExceptionMode();
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedD3D11Device::QueryInterface(REFIID riid, void** ppvObject)
+	HRESULT WrappedD3D11Device::QueryInterface(REFIID riid, void** ppvObject)
 	{
 		HRESULT hr = S_OK;
 		if (riid == __uuidof(ID3D11Device))
@@ -798,12 +798,12 @@ namespace rdcboost
 		}
 	}
 
-	ULONG STDMETHODCALLTYPE WrappedD3D11Device::AddRef(void)
+	ULONG WrappedD3D11Device::AddRef(void)
 	{
 		return InterlockedIncrement(&m_Ref);
 	}
 
-	ULONG STDMETHODCALLTYPE WrappedD3D11Device::Release(void)
+	ULONG WrappedD3D11Device::Release(void)
 	{
 		unsigned int ret = InterlockedDecrement(&m_Ref);
 		if (ret == 2) // only soft refs.
@@ -825,6 +825,9 @@ namespace rdcboost
 		m_pWrappedContext->SaveState(&deviceContextState);
 
 		// 3. copy resources to the new device.
+		// SwapChainBuffers need to do switch before other resources.
+		m_pWrappedSwapChain->SwitchToDevice(pNewSwapChain);
+
 		for (UINT Buffer = 0; Buffer < m_SwapChainBuffers.size(); ++Buffer)
 		{
 			if (m_SwapChainBuffers[Buffer] != NULL)
@@ -850,11 +853,9 @@ namespace rdcboost
 		m_pWrappedContext->SwitchToDevice(pNewDevice);
 		m_pWrappedContext->RestoreState(&deviceContextState);
 
-		m_pReal->Release();
+		Assert(m_pReal->Release() == 0);
 		pNewDevice->AddRef();
 		m_pReal = pNewDevice;
-
-		m_pWrappedSwapChain->SwitchToDevice(pNewSwapChain);
 	}
 
 	ID3D11Texture2D* WrappedD3D11Device::GetWrappedSwapChainBuffer(UINT Buffer, 
@@ -864,9 +865,16 @@ namespace rdcboost
 		ID3D11Texture2D* tex = NULL;
 		if (Buffer < m_SwapChainBuffers.size() && m_SwapChainBuffers[Buffer] != NULL)
 		{
-			Assert(m_SwapChainBuffers[Buffer]->GetReal() == realSurface);
-			tex = m_SwapChainBuffers[Buffer];
-			tex->AddRef();
+			if (m_SwapChainBuffers[Buffer]->GetReal() == realSurface)
+			{
+				tex = m_SwapChainBuffers[Buffer];
+				tex->AddRef();
+			}
+			else
+			{
+				LogWarn("Previous swap chain buffer isn't released by user.");
+				m_SwapChainBuffers[Buffer] = NULL;
+			}
 		}
 
 		if (tex == NULL)
@@ -901,16 +909,19 @@ namespace rdcboost
 
 	void WrappedD3D11Device::OnDeviceChildReleased(ID3D11DeviceChild* pChild)
 	{
-		if (m_BackRefs.erase(pChild) == 0)
-		{
-			auto it = std::find(m_SwapChainBuffers.begin(), m_SwapChainBuffers.end(), 
-								static_cast<WrappedD3D11Texture2D*>(pChild));
+		if (m_BackRefs.erase(pChild) != 0)
+			return;
 
-			if (it != m_SwapChainBuffers.end())
+		for (auto it = m_SwapChainBuffers.begin(); it != m_SwapChainBuffers.end(); ++it)
+		{
+			if (*it && (*it)->GetReal() == pChild)
 			{
 				*it = NULL;
+				return;
 			}
 		}
+
+		LogError("Unknown device child released.");
 	}
 
 }

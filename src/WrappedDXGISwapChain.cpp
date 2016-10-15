@@ -12,6 +12,7 @@ namespace rdcboost
 	{
 		m_pReal->AddRef();
 		m_pWrappedDevice->AddRef();
+		m_ResizeParam.Valid = false;
 	}
 
 	WrappedDXGISwapChain::~WrappedDXGISwapChain()
@@ -20,7 +21,7 @@ namespace rdcboost
 		m_pWrappedDevice->Release();
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::GetBuffer(UINT Buffer, REFIID riid, 
+	HRESULT WrappedDXGISwapChain::GetBuffer(UINT Buffer, REFIID riid, 
 															  void **ppSurface)
 	{
 		if (ppSurface == NULL) return E_INVALIDARG;
@@ -72,59 +73,59 @@ namespace rdcboost
 		return ret;
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::SetFullscreenState(BOOL Fullscreen,
+	HRESULT WrappedDXGISwapChain::SetFullscreenState(BOOL Fullscreen,
 																	   IDXGIOutput *pTarget)
 	{
 		return m_pReal->SetFullscreenState(Fullscreen, pTarget);
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::GetFullscreenState(BOOL *pFullscreen, 
+	HRESULT WrappedDXGISwapChain::GetFullscreenState(BOOL *pFullscreen, 
 																	   IDXGIOutput **ppTarget)
 	{
 		return m_pReal->GetFullscreenState(pFullscreen, ppTarget);
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::GetContainingOutput(IDXGIOutput **ppOutput)
+	HRESULT WrappedDXGISwapChain::GetContainingOutput(IDXGIOutput **ppOutput)
 	{
 		return m_pReal->GetContainingOutput(ppOutput);
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::SetPrivateData(
+	HRESULT WrappedDXGISwapChain::SetPrivateData(
 		REFGUID Name, UINT DataSize, const void *pData)
 	{
 		LogError("This method is not supported by now.");
 		return E_FAIL;
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::SetPrivateDataInterface(
+	HRESULT WrappedDXGISwapChain::SetPrivateDataInterface(
 		REFGUID Name, const IUnknown *pUnknown)
 	{
 		LogError("This method is not supported by now.");
 		return E_FAIL;
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::GetPrivateData(
+	HRESULT WrappedDXGISwapChain::GetPrivateData(
 		REFGUID Name, UINT *pDataSize, void *pData)
 	{
 		LogError("This method is not supported by now.");
 		return E_FAIL;
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::GetDevice(REFIID riid, void **ppDevice)
+	HRESULT WrappedDXGISwapChain::GetDevice(REFIID riid, void **ppDevice)
 	{
 		*ppDevice = NULL;
 		LogError("This method is not supported by now.");
 		return E_FAIL;
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::GetParent(REFIID riid, void **ppParent)
+	HRESULT WrappedDXGISwapChain::GetParent(REFIID riid, void **ppParent)
 	{
 		*ppParent = NULL;
 		LogError("This method is not supported by now.");
 		return E_FAIL;
 	}
 
-	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::QueryInterface(
+	HRESULT WrappedDXGISwapChain::QueryInterface(
 		REFIID riid, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
 	{
 		*ppvObject = NULL;
@@ -132,12 +133,31 @@ namespace rdcboost
 		return E_FAIL;
 	}
 
-	ULONG STDMETHODCALLTYPE WrappedDXGISwapChain::AddRef(void)
+	HRESULT WrappedDXGISwapChain::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, 
+												DXGI_FORMAT NewFormat, UINT SwapChainFlags)
+	{
+		HRESULT res = m_pReal->ResizeBuffers(BufferCount, Width, Height,
+											 NewFormat, SwapChainFlags);
+
+		if (SUCCEEDED(res))
+		{
+			m_ResizeParam.Valid = true;
+			m_ResizeParam.BufferCount = BufferCount;
+			m_ResizeParam.Width = Width;
+			m_ResizeParam.Height = Height;
+			m_ResizeParam.NewFormat = NewFormat;
+			m_ResizeParam.SwapChainFlags = SwapChainFlags;
+		}
+
+		return res;
+	}
+
+	ULONG WrappedDXGISwapChain::AddRef(void)
 	{
 		return InterlockedIncrement(&m_Ref);
 	}
 
-	ULONG STDMETHODCALLTYPE WrappedDXGISwapChain::Release(void)
+	ULONG WrappedDXGISwapChain::Release(void)
 	{
 		unsigned int ret = InterlockedDecrement(&m_Ref);
 		if (ret == 1)
@@ -159,6 +179,16 @@ namespace rdcboost
 			m_pReal->Release();
 			m_pReal = pNewSwapChain;
 			pNewSwapChain->AddRef();
+
+			if (m_ResizeParam.Valid)
+			{
+				HRESULT res = pNewSwapChain->ResizeBuffers(
+					m_ResizeParam.BufferCount, m_ResizeParam.Width, m_ResizeParam.Height,
+					m_ResizeParam.NewFormat, m_ResizeParam.SwapChainFlags);
+
+				if (FAILED(res))
+					LogError("Resize on new swap chain failed.");
+			}
 		}
 	}
 

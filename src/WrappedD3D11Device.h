@@ -321,6 +321,8 @@ namespace rdcboost
 		virtual ULONG STDMETHODCALLTYPE Release(void);
 
 	public:
+		bool IsRenderDocDevice() { return m_bRenderDocDevice; }
+		void SetAsRenderDocDevice(bool b) { m_bRenderDocDevice = b; }
 		void SwitchToDevice(ID3D11Device* pNewDevice, IDXGISwapChain* pNewSwapChain);
 
 		ID3D11Device* GetReal() { return m_pReal; }
@@ -377,6 +379,7 @@ namespace rdcboost
 		std::vector<WrappedD3D11Texture2D*> m_SwapChainBuffers;
 		PrivateDataMap m_PrivateDatas;
 		SDeviceCreateParams m_DeviceCreateParams;
+		bool m_bRenderDocDevice;
 		unsigned int m_Ref;
 	};
 }

@@ -18,6 +18,7 @@ namespace rdcboost
 		va_list vl;
 		va_start(vl, logFmt);
 		vfprintf(stderr, logFmt, vl);
+		fprintf(stderr, "\n");
 		va_end(vl);
 	}
 
@@ -26,6 +27,7 @@ namespace rdcboost
 		va_list vl;
 		va_start(vl, logFmt);
 		vprintf(logFmt, vl);
+		printf("\n");
 		va_end(vl);
 	}
 

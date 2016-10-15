@@ -206,6 +206,7 @@ namespace rdcboost
 			{
 				if (pDevice == pNewDevice)
 				{
+					// TODO_wzq fill buffer with pInitialData
 					*ppTexture2D = pNewBuffer;
 					return S_OK;
 				}
