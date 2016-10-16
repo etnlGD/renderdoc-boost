@@ -365,9 +365,8 @@ namespace rdcboost
 						return (T*) *it;
 					}
 				}
+				return NULL;
 			}
-			
-			return NULL;
 		}
 
 	private:

@@ -12,6 +12,7 @@ namespace rdcboost
 	static RENDERDOC_API_1_0_1* rdcAPI = NULL;
 	static bool InitRenderDoc()
 	{
+		printf("Loading renderdoc.dll ...\n");
 		HMODULE rdcModule = LoadLibrary("renderdoc.dll");
 		if (rdcModule == 0)
 		{

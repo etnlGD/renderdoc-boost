@@ -253,11 +253,13 @@ namespace rdcboost
 		if (pRealLayout)
 		{
 			WrappedD3D11InputLayout* wrapped = new WrappedD3D11InputLayout(pRealLayout, this);
+			wrapped->SetCreateParams(pInputElementDescs, NumElements,
+									 pShaderBytecodeWithInputSignature, BytecodeLength);
+
 			pRealLayout->Release();
 			*ppInputLayout = wrapped;
 			m_BackRefs[pRealLayout] = wrapped;
 		}
-
 		else
 		{
 			*ppInputLayout = NULL;
@@ -840,14 +842,27 @@ namespace rdcboost
 			}
 		}
 
-		std::map<ID3D11DeviceChild*, WrappedD3D11DeviceChildBase*> newBackRefs;
-		for (auto it = m_BackRefs.begin(); it != m_BackRefs.end(); ++it)
+		if (!m_BackRefs.empty())
 		{
-			it->second->SwitchToDevice(pNewDevice);
-			newBackRefs[it->second->GetRealDeviceChild()] = it->second;
-		}
+			printf("Transferring resource to new device:\n");
+			printf("--------------------------------------------------\n");
+			std::map<ID3D11DeviceChild*, WrappedD3D11DeviceChildBase*> newBackRefs;
+			int progress = 0, idx = 0;
+			for (auto it = m_BackRefs.begin(); it != m_BackRefs.end(); ++it)
+			{
+				it->second->SwitchToDevice(pNewDevice);
+				newBackRefs[it->second->GetRealDeviceChild()] = it->second;
 
-		m_BackRefs.swap(newBackRefs);
+				++idx;
+				while (progress < (idx * 50 / m_BackRefs.size()))
+				{
+					printf(">");
+					++progress;
+				}
+			}
+			printf("\n");
+			m_BackRefs.swap(newBackRefs);
+		}
 
 		// 4. restore states of the old immediate device context to the new one.
 		m_pWrappedContext->SwitchToDevice(pNewDevice);
