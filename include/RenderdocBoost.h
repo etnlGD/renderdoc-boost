@@ -1,5 +1,6 @@
 #pragma once
 #include <d3d11.h>
+#include <renderdoc/renderdoc_app.h>
 
 namespace rdcboost
 {
@@ -11,5 +12,7 @@ namespace rdcboost
 		D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext);
 
 	void EnableRenderDoc(ID3D11Device* pDevice);
+
+	RENDERDOC_API_1_0_1* GetRenderdocAPI();
 }
 

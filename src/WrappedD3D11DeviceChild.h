@@ -10,21 +10,9 @@ namespace rdcboost
 	class WrappedD3D11DeviceChildBase
 	{
 	public:
-		WrappedD3D11DeviceChildBase(ID3D11DeviceChild* pReal, WrappedD3D11Device* pDevice) :
-			m_pReal(pReal), m_pWrappedDevice(pDevice), m_ResourceIdx(sResourceIdx++)
-		{
-			m_pWrappedDevice->AddRef();
+		WrappedD3D11DeviceChildBase(ID3D11DeviceChild* pReal, WrappedD3D11Device* pDevice);
 
-			m_pRealDevice = m_pWrappedDevice->GetReal();
-			m_pReal->AddRef();
-		}
-
-		virtual ~WrappedD3D11DeviceChildBase()
-		{
-			m_pWrappedDevice->OnDeviceChildReleased(m_pReal);
-			m_pReal->Release();
-			m_pWrappedDevice->Release();
-		}
+		virtual ~WrappedD3D11DeviceChildBase();
 
 		virtual void SwitchToDevice(ID3D11Device* pNewDevice) = 0;
 		
@@ -44,8 +32,6 @@ namespace rdcboost
 		friend class WrappedD3D11DeviceChild;
 
 		ID3D11Device* m_pRealDevice;
-		int m_ResourceIdx;
-		static int sResourceIdx;
 	};
 
 	template <typename NestedType>

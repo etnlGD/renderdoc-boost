@@ -93,35 +93,35 @@ namespace rdcboost
 	HRESULT WrappedDXGISwapChain::SetPrivateData(
 		REFGUID Name, UINT DataSize, const void *pData)
 	{
-		LogError("This method is not supported by now.");
+		LogError("IDXGISwapChain::SetPrivateData is not supported by now.");
 		return E_FAIL;
 	}
 
 	HRESULT WrappedDXGISwapChain::SetPrivateDataInterface(
 		REFGUID Name, const IUnknown *pUnknown)
 	{
-		LogError("This method is not supported by now.");
+		LogError("IDXGISwapChain::SetPrivateDataInterface is not supported by now.");
 		return E_FAIL;
 	}
 
 	HRESULT WrappedDXGISwapChain::GetPrivateData(
 		REFGUID Name, UINT *pDataSize, void *pData)
 	{
-		LogError("This method is not supported by now.");
+		LogError("IDXGISwapChain::GetPrivateData is not supported by now.");
 		return E_FAIL;
 	}
 
 	HRESULT WrappedDXGISwapChain::GetDevice(REFIID riid, void **ppDevice)
 	{
 		*ppDevice = NULL;
-		LogError("This method is not supported by now.");
+		LogError("IDXGISwapChain::GetDevice is not supported by now.");
 		return E_FAIL;
 	}
 
 	HRESULT WrappedDXGISwapChain::GetParent(REFIID riid, void **ppParent)
 	{
 		*ppParent = NULL;
-		LogError("This method is not supported by now.");
+		LogError("IDXGISwapChain::GetParent is not supported by now.");
 		return E_FAIL;
 	}
 
@@ -129,7 +129,7 @@ namespace rdcboost
 		REFIID riid, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
 	{
 		*ppvObject = NULL;
-		LogError("This method is not supported by now.");
+		LogError("IDXGISwapChain::QueryInterface is not supported by now.");
 		return E_FAIL;
 	}
 

@@ -3,7 +3,6 @@
 #include "WrappedD3D11Device.h"
 #include "WrappedD3D11Context.h"
 #include "DeviceCreateParams.h"
-#include <renderdoc/renderdoc_app.h>
 #include <set>
 
 namespace rdcboost
@@ -35,7 +34,7 @@ namespace rdcboost
 			return true;
 		}
 
-		// TODO_wzq 
+		// TODO_wzq when to free?
 // 		FreeLibrary(rdcModule);
 		return true;
 	}
@@ -103,6 +102,11 @@ namespace rdcboost
 		pRealSwapChain->Release();
 		pRealDevice->Release();
 		pWrappedDevice->SetAsRenderDocDevice(true);
+	}
+
+	RENDERDOC_API_1_0_1* GetRenderdocAPI()
+	{
+		return rdcAPI;
 	}
 
 }

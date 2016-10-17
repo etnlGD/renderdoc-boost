@@ -854,7 +854,7 @@ namespace rdcboost
 				newBackRefs[it->second->GetRealDeviceChild()] = it->second;
 
 				++idx;
-				while (progress < (idx * 50 / m_BackRefs.size()))
+				while (progress < (int) (idx * 50 / m_BackRefs.size()))
 				{
 					printf(">");
 					++progress;
