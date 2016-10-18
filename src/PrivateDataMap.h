@@ -17,31 +17,16 @@ namespace rdcboost
 			{
 			}
 
-			SPrivateData(UINT DataSize, const void* pData) : 
-				m_DataSize(DataSize), m_pData(new char[DataSize])
-			{
-				memcpy(m_pData, pData, DataSize);
-			}
+			SPrivateData(UINT DataSize, const void* pData);
 
 			~SPrivateData()
 			{
 				delete[] m_pData;
 			}
 
-			SPrivateData(const SPrivateData& rhs) : 
-				m_DataSize(rhs.m_DataSize), m_pData(new char[rhs.m_DataSize])
-			{
-				memcpy(m_pData, rhs.m_pData, rhs.m_DataSize);
-			}
+			SPrivateData(const SPrivateData& rhs);
 
-			SPrivateData& operator=(const SPrivateData& rhs)
-			{
-				delete[] m_pData;
-				m_DataSize = rhs.m_DataSize;
-				m_pData = new char[m_DataSize];
-				memcpy(m_pData, rhs.m_pData, m_DataSize);
-				return *this;
-			}
+			SPrivateData& operator=(const SPrivateData& rhs);
 		};
 
 		~PrivateDataMap()
@@ -50,43 +35,9 @@ namespace rdcboost
 				const_cast<IUnknown*>(it->second)->Release();
 		}
 
-		void SetPrivateData(REFGUID guid, UINT DataSize, const void *pData)
-		{
-			if (DataSize == 0 || pData == NULL)
-			{
-				m_PrivateDatas.erase(guid);
-			}
-			else
-			{
-				m_PrivateDatas[guid] = SPrivateData(DataSize, pData);
-			}
-		}
+		void SetPrivateData(REFGUID guid, UINT DataSize, const void *pData);
 
-		void SetPrivateDataInterface(REFGUID guid, const IUnknown *pData)
-		{
-			auto it = m_PrivateInterfaces.find(guid);
-			if (pData != NULL)
-			{
-				const_cast<IUnknown*>(pData)->AddRef();
-				if (it != m_PrivateInterfaces.end())
-				{
-					const_cast<IUnknown*>(it->second)->Release();
-					it->second = pData;
-				}
-				else
-				{
-					m_PrivateInterfaces.insert(std::make_pair(guid, pData));
-				}
-			}
-			else
-			{
-				if (it != m_PrivateInterfaces.end())
-				{
-					const_cast<IUnknown*>(it->second)->Release();
-					m_PrivateInterfaces.erase(it);
-				}
-			}
-		}
+		void SetPrivateDataInterface(REFGUID guid, const IUnknown *pData);
 
 		template <typename T>
 		void CopyPrivateData(T* pObject)

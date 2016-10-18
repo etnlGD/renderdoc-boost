@@ -33,7 +33,7 @@ namespace rdcboost
 		{
 			if (riid == __uuidof(ID3D11View))
 			{
-				*ppvObject = this;
+				*ppvObject = static_cast<ID3D11View*>(this);
 				AddRef();
 				return S_OK;
 			}

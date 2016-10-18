@@ -45,11 +45,21 @@ namespace rdcboost
 
 		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject)
 		{
-			if (riid == __uuidof(NestedType) ||
-				riid == __uuidof(ID3D11DeviceChild) ||
-				riid == __uuidof(IUnknown))
+			if (riid == __uuidof(NestedType))
 			{
-				*ppvObject = this;
+				*ppvObject = static_cast<NestedType*>(this);
+				AddRef();
+				return S_OK;
+			}
+			else if (riid == __uuidof(ID3D11DeviceChild))
+			{
+				*ppvObject = static_cast<ID3D11DeviceChild*>(this);
+				AddRef();
+				return S_OK;
+			}
+			else if (riid == __uuidof(IUnknown))
+			{
+				*ppvObject = static_cast<IUnknown*>(this);
 				AddRef();
 				return S_OK;
 			}

@@ -21,7 +21,7 @@ namespace rdcboost
 		{
 			if (riid == __uuidof(ID3D11Asynchronous))
 			{
-				*ppvObject = this;
+				*ppvObject = static_cast<ID3D11Asynchronous*>(this);
 				AddRef();
 				return S_OK;
 			}
@@ -48,7 +48,7 @@ namespace rdcboost
 		{
 			if (riid == __uuidof(ID3D11Query))
 			{
-				*ppvObject = this;
+				*ppvObject = static_cast<ID3D11Query*>(this);
 				AddRef();
 				return S_OK;
 			}
