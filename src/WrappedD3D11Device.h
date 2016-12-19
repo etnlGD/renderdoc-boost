@@ -369,6 +369,8 @@ namespace rdcboost
 			}
 		}
 
+		void OnFramePresent();
+
 	private:
 		ID3D11Device* m_pReal;
 		ID3D11Device* m_pRDCDevice;
@@ -380,6 +382,18 @@ namespace rdcboost
 		SDeviceCreateParams m_DeviceCreateParams;
 		bool m_bRenderDocDevice;
 		unsigned int m_Ref;
+
+	private:
+		enum {
+			CREATE_BUFFER,
+			CREATE_TEXTURE,
+			CREATE_VIEW,
+			CREATE_STATE,
+			CREATE_SHADER,
+			CREATE_COUNT,
+		};
+		LARGE_INTEGER m_Counter[CREATE_COUNT];
+		LARGE_INTEGER m_Frequency;
 	};
 }
 

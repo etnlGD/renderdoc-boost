@@ -4,22 +4,15 @@ namespace rdcboost
 {
 
 	PrivateDataMap::SPrivateData::SPrivateData(UINT DataSize, const void* pData) : 
-		m_DataSize(DataSize)
+		m_DataSize(DataSize), m_pData(new char[DataSize])
 	{
-		if (DataSize != 0 && pData)
-		{
-			m_pData = new char[DataSize];
-			memcpy(m_pData, pData, DataSize);
-		}
-		else
-		{
-			m_pData = NULL;
-		}
+		memcpy(m_pData, pData, DataSize);
 	}
 
-	PrivateDataMap::SPrivateData::SPrivateData(const SPrivateData& rhs) : m_DataSize(rhs.m_DataSize)
+	PrivateDataMap::SPrivateData::SPrivateData(const SPrivateData& rhs) : 
+		m_DataSize(rhs.m_DataSize)
 	{
-		if (rhs.m_DataSize && rhs.m_pData)
+		if (rhs.m_pData && rhs.m_DataSize)
 		{
 			m_pData = new char[rhs.m_DataSize];
 			memcpy(m_pData, rhs.m_pData, rhs.m_DataSize);
@@ -50,7 +43,10 @@ namespace rdcboost
 
 	void PrivateDataMap::SetPrivateData(REFGUID guid, UINT DataSize, const void *pData)
 	{
-		m_PrivateDatas.insert(std::make_pair(guid, SPrivateData(DataSize, pData)));
+		if (DataSize == 0 || pData == NULL)
+			m_PrivateDatas.erase(guid);
+		else
+			m_PrivateDatas[guid] = SPrivateData(DataSize, pData);
 	}
 
 	void PrivateDataMap::SetPrivateDataInterface(REFGUID guid, const IUnknown *pData)

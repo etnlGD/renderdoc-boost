@@ -24,6 +24,13 @@ namespace rdcboost
 		m_pReal->GetImmediateContext(&pImmediateContext);
 		m_pWrappedContext = new WrappedD3D11Context(pImmediateContext, this);
 		pImmediateContext->Release();
+
+		for (int i = 0; i < CREATE_COUNT; ++i)
+		{
+			m_Counter[i].QuadPart = 0;
+		}
+
+		QueryPerformanceFrequency(&m_Frequency);
 	}
 
 	WrappedD3D11Device::~WrappedD3D11Device()
@@ -34,10 +41,31 @@ namespace rdcboost
 			m_pRDCDevice->Release();
 	}
 
+	class StopWatch
+	{
+	public:
+		StopWatch(LARGE_INTEGER* result) : m_Result(result)
+		{
+			QueryPerformanceCounter(&m_BeginTime);
+		}
+
+		~StopWatch()
+		{
+			LARGE_INTEGER endTime;
+			QueryPerformanceCounter(&endTime);
+			m_Result->QuadPart += (endTime.QuadPart - m_BeginTime.QuadPart);
+		}
+
+	private:
+		LARGE_INTEGER* m_Result;
+		LARGE_INTEGER m_BeginTime;
+	};
+
 	HRESULT WrappedD3D11Device::CreateBuffer(const D3D11_BUFFER_DESC *pDesc,
 											 const D3D11_SUBRESOURCE_DATA *pInitialData, 
 											 ID3D11Buffer **ppBuffer)
 	{
+		StopWatch s(&m_Counter[CREATE_BUFFER]);
 		if (ppBuffer == NULL)
 			return m_pReal->CreateBuffer(pDesc, pInitialData, NULL);
 
@@ -62,6 +90,7 @@ namespace rdcboost
 												const D3D11_SUBRESOURCE_DATA *pInitialData, 
 												ID3D11Texture1D **ppTexture1D)
 	{
+		StopWatch s(&m_Counter[CREATE_TEXTURE]);
 		if (ppTexture1D == NULL)
 			return m_pReal->CreateTexture1D(pDesc, pInitialData, NULL);
 
@@ -86,6 +115,7 @@ namespace rdcboost
 												const D3D11_SUBRESOURCE_DATA *pInitialData, 
 												ID3D11Texture2D **ppTexture2D)
 	{
+		StopWatch s(&m_Counter[CREATE_TEXTURE]);
 		if (ppTexture2D == NULL)
 			return m_pReal->CreateTexture2D(pDesc, pInitialData, NULL);
 
@@ -110,6 +140,7 @@ namespace rdcboost
 												const D3D11_SUBRESOURCE_DATA *pInitialData, 
 												ID3D11Texture3D **ppTexture3D)
 	{
+		StopWatch s(&m_Counter[CREATE_TEXTURE]);
 		if (ppTexture3D == NULL)
 			return m_pReal->CreateTexture3D(pDesc, pInitialData, NULL);
 
@@ -134,6 +165,7 @@ namespace rdcboost
 														 const D3D11_SHADER_RESOURCE_VIEW_DESC *pDesc, 
 														 ID3D11ShaderResourceView **ppSRView)
 	{
+		StopWatch s(&m_Counter[CREATE_VIEW]);
 		ID3D11Resource* pRealResource = UnwrapSelf(pResource);
 		if (ppSRView == NULL)
 			return m_pReal->CreateShaderResourceView(pRealResource, pDesc, NULL);
@@ -160,6 +192,7 @@ namespace rdcboost
 														  const D3D11_UNORDERED_ACCESS_VIEW_DESC *pDesc, 
 														  ID3D11UnorderedAccessView **ppUAView)
 	{
+		StopWatch s(&m_Counter[CREATE_VIEW]);
 		ID3D11Resource* pRealResource = UnwrapSelf(pResource);
 
 		if (ppUAView == NULL)
@@ -187,6 +220,7 @@ namespace rdcboost
 													   const D3D11_RENDER_TARGET_VIEW_DESC *pDesc, 
 													   ID3D11RenderTargetView **ppRTView)
 	{
+		StopWatch s(&m_Counter[CREATE_VIEW]);
 		ID3D11Resource* pRealResource = UnwrapSelf(pResource);
 		if (ppRTView == NULL)
 			return m_pReal->CreateRenderTargetView(pRealResource, pDesc, NULL);
@@ -213,6 +247,7 @@ namespace rdcboost
 													   const D3D11_DEPTH_STENCIL_VIEW_DESC *pDesc, 
 													   ID3D11DepthStencilView **ppDepthStencilView)
 	{
+		StopWatch s(&m_Counter[CREATE_VIEW]);
 		ID3D11Resource* pRealResource = UnwrapSelf(pResource);
 		if (ppDepthStencilView == NULL)
 			return m_pReal->CreateDepthStencilView(pRealResource, pDesc, NULL);
@@ -240,6 +275,7 @@ namespace rdcboost
 		const void *pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength, 
 		ID3D11InputLayout **ppInputLayout)
 	{
+		StopWatch s(&m_Counter[CREATE_STATE]);
 		if (ppInputLayout == NULL)
 			return m_pReal->CreateInputLayout(pInputElementDescs, NumElements, 
 											  pShaderBytecodeWithInputSignature, 
@@ -273,6 +309,7 @@ namespace rdcboost
 												   ID3D11ClassLinkage *pClassLinkage, 
 												   ID3D11VertexShader **ppVertexShader)
 	{
+		StopWatch s(&m_Counter[CREATE_SHADER]);
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -304,6 +341,7 @@ namespace rdcboost
 													 ID3D11ClassLinkage *pClassLinkage, 
 													 ID3D11GeometryShader **ppGeometryShader)
 	{
+		StopWatch s(&m_Counter[CREATE_SHADER]);
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -336,6 +374,7 @@ namespace rdcboost
 		const UINT *pBufferStrides, UINT NumStrides, UINT RasterizedStream, 
 		ID3D11ClassLinkage *pClassLinkage, ID3D11GeometryShader **ppGeometryShader)
 	{ 
+		StopWatch s(&m_Counter[CREATE_SHADER]);
 		LogError("CreateGeometryShaderWithStreamOutput is not supported by now");
 
 		if (ppGeometryShader)
@@ -349,6 +388,7 @@ namespace rdcboost
 												  ID3D11ClassLinkage *pClassLinkage, 
 												  ID3D11PixelShader **ppPixelShader)
 	{
+		StopWatch s(&m_Counter[CREATE_SHADER]);
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -380,6 +420,7 @@ namespace rdcboost
 												 ID3D11ClassLinkage *pClassLinkage, 
 												 ID3D11HullShader **ppHullShader)
 	{
+		StopWatch s(&m_Counter[CREATE_SHADER]);
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -410,6 +451,7 @@ namespace rdcboost
 												   ID3D11ClassLinkage *pClassLinkage, 
 												   ID3D11DomainShader **ppDomainShader)
 	{
+		StopWatch s(&m_Counter[CREATE_SHADER]);
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -440,6 +482,7 @@ namespace rdcboost
 													ID3D11ClassLinkage *pClassLinkage, 
 													ID3D11ComputeShader **ppComputeShader)
 	{
+		StopWatch s(&m_Counter[CREATE_SHADER]);
 		if (pClassLinkage != NULL)
 			LogError("Class linkage is not supported by now");
 
@@ -478,6 +521,7 @@ namespace rdcboost
 	HRESULT WrappedD3D11Device::CreateBlendState(const D3D11_BLEND_DESC *pBlendStateDesc, 
 												 ID3D11BlendState **ppBlendState)
 	{
+		StopWatch s(&m_Counter[CREATE_STATE]);
 		if (ppBlendState == NULL)
 			return m_pReal->CreateBlendState(pBlendStateDesc, NULL);
 
@@ -511,6 +555,7 @@ namespace rdcboost
 		const D3D11_DEPTH_STENCIL_DESC *pDepthStencilDesc, 
 		ID3D11DepthStencilState **ppDepthStencilState)
 	{
+		StopWatch s(&m_Counter[CREATE_STATE]);
 		if (ppDepthStencilState == NULL)
 			return m_pReal->CreateDepthStencilState(pDepthStencilDesc, NULL);
 
@@ -544,6 +589,7 @@ namespace rdcboost
 		const D3D11_RASTERIZER_DESC *pRasterizerDesc, 
 		ID3D11RasterizerState **ppRasterizerState)
 	{
+		StopWatch s(&m_Counter[CREATE_STATE]);
 		if (ppRasterizerState == NULL)
 			return m_pReal->CreateRasterizerState(pRasterizerDesc, NULL);
 
@@ -576,6 +622,7 @@ namespace rdcboost
 	HRESULT WrappedD3D11Device::CreateSamplerState(const D3D11_SAMPLER_DESC *pSamplerDesc, 
 												   ID3D11SamplerState **ppSamplerState)
 	{
+		StopWatch s(&m_Counter[CREATE_STATE]);
 		if (ppSamplerState == NULL)
 			return m_pReal->CreateSamplerState(pSamplerDesc, NULL);
 
@@ -608,6 +655,7 @@ namespace rdcboost
 	HRESULT WrappedD3D11Device::CreateQuery(const D3D11_QUERY_DESC *pQueryDesc, 
 											ID3D11Query **ppQuery)
 	{
+		StopWatch s(&m_Counter[CREATE_STATE]);
 		if (ppQuery == NULL)
 			return m_pReal->CreateQuery(pQueryDesc, NULL);
 
@@ -631,6 +679,7 @@ namespace rdcboost
 	HRESULT WrappedD3D11Device::CreatePredicate(const D3D11_QUERY_DESC *pPredicateDesc, 
 												ID3D11Predicate **ppPredicate)
 	{
+		StopWatch s(&m_Counter[CREATE_STATE]);
 		if (ppPredicate == NULL)
 			return m_pReal->CreatePredicate(pPredicateDesc, NULL);
 
@@ -654,6 +703,7 @@ namespace rdcboost
 	HRESULT WrappedD3D11Device::CreateCounter(const D3D11_COUNTER_DESC *pCounterDesc, 
 											  ID3D11Counter **ppCounter)
 	{
+		StopWatch s(&m_Counter[CREATE_STATE]);
 		if (ppCounter == NULL)
 			return m_pReal->CreateCounter(pCounterDesc, NULL);
 
@@ -937,6 +987,28 @@ namespace rdcboost
 		}
 
 		LogError("Unknown device child released.");
+	}
+
+	void WrappedD3D11Device::OnFramePresent()
+	{
+// 		double timeInMs[CREATE_COUNT];
+// 		for (int i = 0; i < CREATE_COUNT; ++i)
+// 		{
+// 			timeInMs[i] = (double)m_Counter[i].QuadPart * 1000.0 / m_Frequency.QuadPart;
+// 		}
+// 
+// 		char buf[1024];
+// 		sprintf_s(buf, "CreateBuffer: %.3fms, CreateTexture: %.3fms, CreateView: %.3fms, "
+// 					 "CreateState: %.3fms, CreateShader: %.3fms", 
+// 					 timeInMs[0], timeInMs[1], timeInMs[2], 
+// 					 timeInMs[3], timeInMs[4]);
+// 
+// 		LogInfo("%s", buf);
+
+		for (int i = 0; i < CREATE_COUNT; ++i)
+		{
+			m_Counter[i].QuadPart = 0;
+		}
 	}
 
 }

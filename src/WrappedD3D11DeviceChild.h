@@ -97,8 +97,24 @@ namespace rdcboost
 
 		virtual HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID guid, UINT DataSize, const void *pData)
 		{
+			char* pStrData2 = NULL;
+			if (guid == WKPDID_D3DDebugObjectName)
+			{ // work-around for renderdoc 
+				const char* pStrData = (const char*)pData;
+				if (pStrData[DataSize - 1] != '\0')
+				{
+					pStrData2 = new char[DataSize + 1];
+					memcpy(pStrData2, pData, DataSize);
+					pStrData2[DataSize] = '\0';
+					pData = pStrData2;
+				}
+			}
+
 			m_PrivateData.SetPrivateData(guid, DataSize, pData);
-			return GetReal()->SetPrivateData(guid, DataSize, pData);
+			HRESULT res = GetReal()->SetPrivateData(guid, DataSize, pData);
+			delete[] pStrData2;
+
+			return res;
 		}
 
 		virtual HRESULT STDMETHODCALLTYPE SetPrivateDataInterface(REFGUID guid, const IUnknown *pData)

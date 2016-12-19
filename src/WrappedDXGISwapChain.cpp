@@ -21,8 +21,7 @@ namespace rdcboost
 		m_pWrappedDevice->Release();
 	}
 
-	HRESULT WrappedDXGISwapChain::GetBuffer(UINT Buffer, REFIID riid, 
-															  void **ppSurface)
+	HRESULT WrappedDXGISwapChain::GetBuffer(UINT Buffer, REFIID riid, void **ppSurface)
 	{
 		if (ppSurface == NULL) return E_INVALIDARG;
 
@@ -45,30 +44,30 @@ namespace rdcboost
 
 		Assert(riid == __uuidof(ID3D11Texture2D) || riid == __uuidof(ID3D11Resource));
 
-		HRESULT ret = m_pReal->GetBuffer(Buffer, riid, ppSurface);
+		ID3D11Texture2D *realSurface = NULL;
+		HRESULT ret = m_pReal->GetBuffer(Buffer, riid, (void**) &realSurface);
 
-		ID3D11Texture2D *realSurface = static_cast<ID3D11Texture2D *>(*ppSurface);
-		ID3D11Texture2D *tex = realSurface;
+		ID3D11Texture2D *wrappedTex = NULL;
 		if (FAILED(ret))
 		{
 			LogError("Failed to get swapchain backbuffer %d: %08x", Buffer, ret);
-			if (realSurface)
-			{
-				realSurface->Release();
-				realSurface = NULL;
-			}
-			tex = NULL;
+			*ppSurface = NULL;
 		}
 		else 
 		{
-			tex = m_pWrappedDevice->GetWrappedSwapChainBuffer(Buffer, realSurface);
-			realSurface->Release();
+			wrappedTex = m_pWrappedDevice->GetWrappedSwapChainBuffer(Buffer, realSurface);
+
+			if (riid == __uuidof(ID3D11Texture2D))
+				*ppSurface = static_cast<ID3D11Texture2D*>(wrappedTex);
+			else if (riid == __uuidof(ID3D11Resource))
+				*ppSurface = static_cast<ID3D11Resource*>(wrappedTex);
 		}
 
-		if (riid == __uuidof(ID3D11Texture2D))
-			*ppSurface = static_cast<ID3D11Texture2D*>(tex);
-		else if (riid == __uuidof(ID3D11Resource))
-			*ppSurface = static_cast<ID3D11Resource*>(tex);
+		if (realSurface != NULL)
+		{
+			realSurface->Release();
+			realSurface = NULL;
+		}
 
 		return ret;
 	}
@@ -133,7 +132,13 @@ namespace rdcboost
 		return E_FAIL;
 	}
 
-	HRESULT WrappedDXGISwapChain::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, 
+	HRESULT STDMETHODCALLTYPE WrappedDXGISwapChain::Present(UINT SyncInterval, UINT Flags)
+	{
+		m_pWrappedDevice->OnFramePresent();
+		return m_pReal->Present(SyncInterval, Flags);
+	}
+
+	HRESULT WrappedDXGISwapChain::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height,
 												DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 	{
 		HRESULT res = m_pReal->ResizeBuffers(BufferCount, Width, Height,

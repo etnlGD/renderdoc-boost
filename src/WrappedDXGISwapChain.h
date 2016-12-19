@@ -52,10 +52,7 @@ namespace rdcboost
 
 
 	public:
-		virtual HRESULT STDMETHODCALLTYPE Present(UINT SyncInterval, UINT Flags)
-		{
-			return m_pReal->Present(SyncInterval, Flags);
-		}
+		virtual HRESULT STDMETHODCALLTYPE Present(UINT SyncInterval, UINT Flags);
 
 		virtual HRESULT STDMETHODCALLTYPE GetDesc(DXGI_SWAP_CHAIN_DESC *pDesc)
 		{

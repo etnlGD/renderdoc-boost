@@ -31,5 +31,14 @@ namespace rdcboost
 		va_end(vl);
 	}
 
+	void LogInfo(const char* logFmt, ...)
+	{
+		va_list vl;
+		va_start(vl, logFmt);
+		vprintf(logFmt, vl);
+		printf("\n");
+		va_end(vl);
+	}
+
 }
 
