@@ -106,6 +106,8 @@ namespace rdcboost
 					pStrData2 = new char[DataSize + 1];
 					memcpy(pStrData2, pData, DataSize);
 					pStrData2[DataSize] = '\0';
+
+					DataSize = DataSize + 1;
 					pData = pStrData2;
 				}
 			}
