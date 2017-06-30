@@ -15,7 +15,8 @@ namespace rdcboost
 		HMODULE rdcModule = LoadLibrary("renderdoc.dll");
 		if (rdcModule == 0)
 		{
-			LogError("Load renderdoc.dll failed.");
+			DWORD errorCode = GetLastError();
+			LogError("Load renderdoc.dll failed(ERROR CODE: %d).", (int) errorCode);
 			return false;
 		}
 

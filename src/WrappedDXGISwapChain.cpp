@@ -119,9 +119,10 @@ namespace rdcboost
 
 	HRESULT WrappedDXGISwapChain::GetParent(REFIID riid, void **ppParent)
 	{
-		*ppParent = NULL;
-		LogError("IDXGISwapChain::GetParent is not supported by now.");
-		return E_FAIL;
+// 		*ppParent = NULL;
+// 		LogError("IDXGISwapChain::GetParent is not supported by now.");
+// 		return E_FAIL;
+		return m_pReal->GetParent(riid, ppParent);
 	}
 
 	HRESULT WrappedDXGISwapChain::QueryInterface(

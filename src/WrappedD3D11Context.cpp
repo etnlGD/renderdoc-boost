@@ -5,6 +5,7 @@
 #include "WrappedD3D11Shader.h"
 #include "Log.h"
 #include "DeviceContextState.h"
+#include "WrappedD3D11Async.h"
 
 namespace rdcboost
 {
@@ -320,11 +321,75 @@ namespace rdcboost
 
 	void WrappedD3D11Context::Begin(ID3D11Asynchronous *pAsync)
 	{
+		do {
+			if (pAsync == NULL)
+				break;
+
+			ID3D11Query* pQuery = NULL;
+			pAsync->QueryInterface<ID3D11Query>(&pQuery);
+			if (pQuery != NULL)
+			{
+				WrappedD3D11Query* pWrappedQuery = static_cast<WrappedD3D11Query*>(pQuery);
+				pWrappedQuery->Begin();
+				break;
+			}
+
+			ID3D11Counter* pCounter = NULL;
+			pAsync->QueryInterface<ID3D11Counter>(&pCounter);
+			if (pCounter != NULL)
+			{
+				WrappedD3D11Counter* pWrappedCounter = static_cast<WrappedD3D11Counter*>(pCounter);
+				pWrappedCounter->Begin();
+				break;
+			}
+
+			ID3D11Predicate* pPredicate = NULL;
+			pAsync->QueryInterface<ID3D11Predicate>(&pPredicate);
+			if (pPredicate != NULL)
+			{
+				WrappedD3D11Predicate* pWrappedPredicate = static_cast<WrappedD3D11Predicate*>(pPredicate);
+				pWrappedPredicate->Begin();
+				break;
+			}
+		} while (0);
+
 		GetActivePtr()->Begin(Unwrap(pAsync));
 	}
 
 	void WrappedD3D11Context::End(ID3D11Asynchronous *pAsync)
 	{
+		do {
+			if (pAsync == NULL)
+				break;
+
+			ID3D11Query* pQuery = NULL;
+			pAsync->QueryInterface<ID3D11Query>(&pQuery);
+			if (pQuery != NULL)
+			{
+				WrappedD3D11Query* pWrappedQuery = static_cast<WrappedD3D11Query*>(pQuery);
+				pWrappedQuery->End();
+				break;
+			}
+
+			ID3D11Counter* pCounter = NULL;
+			pAsync->QueryInterface<ID3D11Counter>(&pCounter);
+			if (pCounter != NULL)
+			{
+				WrappedD3D11Counter* pWrappedCounter = static_cast<WrappedD3D11Counter*>(pCounter);
+				pWrappedCounter->End();
+				break;
+			}
+
+			ID3D11Predicate* pPredicate = NULL;
+			pAsync->QueryInterface<ID3D11Predicate>(&pPredicate);
+			if (pPredicate != NULL)
+			{
+				WrappedD3D11Predicate* pWrappedPredicate = static_cast<WrappedD3D11Predicate*>(pPredicate);
+				pWrappedPredicate->End();
+				break;
+			}
+		} while (0);
+
 		GetActivePtr()->End(Unwrap(pAsync));
 	}
 

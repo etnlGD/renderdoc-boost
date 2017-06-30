@@ -16,12 +16,23 @@ namespace rdcboost
 
 	ID3D11DeviceChild* WrappedD3D11Counter::CopyToDevice(ID3D11Device* pNewDevice)
 	{
+		// TODO_wzq 
+
 		D3D11_COUNTER_DESC desc;
 		GetReal()->GetDesc(&desc);
 
 		ID3D11Counter* pNewCounter = NULL;
 		if (FAILED(pNewDevice->CreateCounter(&desc, &pNewCounter)))
 			LogError("CreateCounter failed when CopyToDevice");
+
+		if (pNewCounter != NULL && m_bBeginIssued)
+		{
+			ID3D11DeviceContext* pImmediateContext = NULL;
+			pNewDevice->GetImmediateContext(&pImmediateContext);
+
+			if (pImmediateContext != NULL)
+				pImmediateContext->Begin(pNewCounter);
+		}
 
 		return pNewCounter;
 	}

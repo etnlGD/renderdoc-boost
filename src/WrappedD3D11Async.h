@@ -8,7 +8,7 @@ namespace rdcboost
 	{
 	public:
 		WrappedD3D11Async(NestedType* pReal, WrappedD3D11Device* pDevice) : 
-			WrappedD3D11DeviceChild(pReal, pDevice)
+			WrappedD3D11DeviceChild(pReal, pDevice), m_bBeginIssued(false)
 		{
 		}
 
@@ -28,6 +28,20 @@ namespace rdcboost
 
 			return WrappedD3D11DeviceChild::QueryInterface(riid, ppvObject);
 		}
+
+		void Begin()
+		{
+			m_bBeginIssued = true;
+		}
+
+		void End()
+		{
+			m_bBeginIssued = false;
+		}
+
+
+	protected:
+		bool m_bBeginIssued;
 	};
 
 	template <typename NestedType>
@@ -66,7 +80,7 @@ namespace rdcboost
 		template <>
 		struct Traits<ID3D11Query>
 		{
-			static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc)
+			static ID3D11Asynchronous* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc)
 			{
 				ID3D11Query* pNewPredicate = NULL;
 				if (FAILED(pNewDevice->CreateQuery(desc, &pNewPredicate)))
@@ -79,7 +93,7 @@ namespace rdcboost
 		template <>
 		struct Traits<ID3D11Predicate>
 		{
-			static ID3D11DeviceChild* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc)
+			static ID3D11Asynchronous* copyImp(ID3D11Device* pNewDevice, D3D11_QUERY_DESC* desc)
 			{
 				ID3D11Predicate* pNewPredicate = NULL;
 				if (FAILED(pNewDevice->CreatePredicate(desc, &pNewPredicate)))
@@ -91,9 +105,20 @@ namespace rdcboost
 
 		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice)
 		{
+			// TODO_wzq 
 			D3D11_QUERY_DESC desc;
 			GetReal()->GetDesc(&desc);
-			return Traits<NestedType>::copyImp(pNewDevice, &desc);
+			ID3D11Asynchronous* pNewAsync = Traits<NestedType>::copyImp(pNewDevice, &desc);
+			if (m_bBeginIssued && pNewAsync != NULL)
+			{
+				ID3D11DeviceContext* pImmediateContext = NULL;
+				pNewDevice->GetImmediateContext(&pImmediateContext);
+
+				if (pImmediateContext != NULL)
+					pImmediateContext->Begin(pNewAsync);
+			}
+
+			return pNewAsync;
 		}
 	};
 
