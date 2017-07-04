@@ -11,7 +11,7 @@ namespace rdcboost
 		IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice,
 		D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext);
 
-	void EnableRenderDoc(ID3D11Device* pDevice);
+	void EnableRenderDoc(ID3D11Device* pDevice, bool bSwitchToRenderdoc);
 
 	RENDERDOC_API_1_0_1* GetRenderdocAPI();
 }
