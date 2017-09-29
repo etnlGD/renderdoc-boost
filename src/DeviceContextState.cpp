@@ -113,7 +113,10 @@ namespace rdcboost
 		ctx->IAGetIndexBuffer(&m_pIndexBuffer, &m_IndexFormat, &m_IndexOffset);
 
 		ctx->SOGetTargets(eSOTargetCount, m_pSOTargets);
-		memcpy(m_SOOffsets, SOOffsets, sizeof(m_SOOffsets));
+		if (SOOffsets)
+			memcpy(m_SOOffsets, SOOffsets, sizeof(m_SOOffsets));
+		else
+			memset(m_SOOffsets, 0, sizeof(m_SOOffsets));
 
 		ctx->RSGetState(&m_pRasterizerState);
 		ctx->RSGetScissorRects(&m_ScissorCount, m_ScissorRects);

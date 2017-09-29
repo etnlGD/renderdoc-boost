@@ -9,6 +9,8 @@
 #include "Log.h"
 #include "DeviceContextState.h"
 #include "WrappedDXGISwapChain.h"
+#include "WrappedD3D11ClassLinkage.h"
+#include <d3d11_2.h>
 
 namespace rdcboost
 {
@@ -19,6 +21,7 @@ namespace rdcboost
 		m_pWrappedSwapChain(NULL), m_bRenderDocDevice(false)
 	{
 		m_pReal->AddRef();
+		m_DummyInfoQueue.m_pDevice = this;
 
 		ID3D11DeviceContext* pImmediateContext = NULL;
 		m_pReal->GetImmediateContext(&pImmediateContext);
@@ -310,27 +313,18 @@ namespace rdcboost
 												   ID3D11VertexShader **ppVertexShader)
 	{
 		StopWatch s(&m_Counter[CREATE_SHADER]);
-		if (pClassLinkage != NULL)
-			LogError("Class linkage is not supported by now");
-
-		if (ppVertexShader == NULL)
-			return m_pReal->CreateVertexShader(pShaderBytecode, BytecodeLength, NULL, NULL);
-
-		ID3D11VertexShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateVertexShader(pShaderBytecode, BytecodeLength, 
-												  NULL, &pRealShader);
-		if (pRealShader)
+												  UnwrapSelf(pClassLinkage), ppVertexShader);
+		if (ppVertexShader && *ppVertexShader)
 		{
-			WrappedD3D11VertexShader* wrapped = 
-				new WrappedD3D11VertexShader(pShaderBytecode, BytecodeLength, pRealShader, this);
+			ID3D11VertexShader* pRealShader = *ppVertexShader;
+			*ppVertexShader = new WrappedD3D11VertexShader(
+									pShaderBytecode, BytecodeLength, 
+									static_cast<WrappedD3D11ClassLinkage*>(pClassLinkage), 
+									pRealShader, this);
 
+			m_BackRefs[pRealShader] = static_cast<WrappedD3D11VertexShader*>(*ppVertexShader);
 			pRealShader->Release();
-			*ppVertexShader = wrapped;
-			m_BackRefs[pRealShader] = wrapped;
-		}
-		else
-		{
-			*ppVertexShader = NULL;
 		}
 
 		return ret;
@@ -342,27 +336,21 @@ namespace rdcboost
 													 ID3D11GeometryShader **ppGeometryShader)
 	{
 		StopWatch s(&m_Counter[CREATE_SHADER]);
-		if (pClassLinkage != NULL)
-			LogError("Class linkage is not supported by now");
-
-		if (ppGeometryShader == NULL)
-			return m_pReal->CreateGeometryShader(pShaderBytecode, BytecodeLength, NULL, NULL);
-
-		ID3D11GeometryShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateGeometryShader(pShaderBytecode, BytecodeLength,
-												    NULL, &pRealShader);
-		if (pRealShader)
+												    UnwrapSelf(pClassLinkage), ppGeometryShader);
+		if (ppGeometryShader && *ppGeometryShader)
 		{
-			WrappedD3D11GeometryShader* wrapped = 
-				new WrappedD3D11GeometryShader(pShaderBytecode, BytecodeLength, pRealShader, this);
+			ID3D11GeometryShader* pRealShader = *ppGeometryShader;
 
+			SGeometryShaderSOInfo soInfo;
+			soInfo.withSO = false;
+			*ppGeometryShader = new WrappedD3D11GeometryShader(
+										pShaderBytecode, BytecodeLength, soInfo, 
+										static_cast<WrappedD3D11ClassLinkage*>(pClassLinkage), 
+										pRealShader, this);
+
+			m_BackRefs[pRealShader] = static_cast<WrappedD3D11GeometryShader*>(*ppGeometryShader);
 			pRealShader->Release();
-			*ppGeometryShader = wrapped;
-			m_BackRefs[pRealShader] = wrapped;
-		}
-		else
-		{
-			*ppGeometryShader = NULL;
 		}
 
 		return ret;
@@ -375,12 +363,38 @@ namespace rdcboost
 		ID3D11ClassLinkage *pClassLinkage, ID3D11GeometryShader **ppGeometryShader)
 	{ 
 		StopWatch s(&m_Counter[CREATE_SHADER]);
-		LogError("CreateGeometryShaderWithStreamOutput is not supported by now");
+		HRESULT ret = m_pReal->CreateGeometryShaderWithStreamOutput(
+							pShaderBytecode, BytecodeLength, pSODeclaration, NumEntries,
+							pBufferStrides, NumStrides, RasterizedStream,
+							UnwrapSelf(pClassLinkage), ppGeometryShader);
+		if (ppGeometryShader && *ppGeometryShader)
+		{
+			ID3D11GeometryShader* pRealShader = *ppGeometryShader;
+			SGeometryShaderSOInfo info;
+			info.withSO = true;
+			info.SODeclaration.insert(info.SODeclaration.end(), 
+									  pSODeclaration, pSODeclaration + NumEntries);
+			for (auto it = info.SODeclaration.begin(); it != info.SODeclaration.end(); ++it)
+			{
+				size_t len = strlen(it->SemanticName);
+				char* newSemanticName = new char[len + 1];
+				memcpy(newSemanticName, it->SemanticName, len + 1);
+				it->SemanticName = newSemanticName;
+			}
 
-		if (ppGeometryShader)
-			*ppGeometryShader = NULL;
+			info.BufferStrides.insert(info.BufferStrides.end(), 
+									  pBufferStrides, pBufferStrides + NumStrides);
+			info.rasterizedStream = RasterizedStream;
+			*ppGeometryShader = new WrappedD3D11GeometryShader(
+				pShaderBytecode, BytecodeLength, info,
+				static_cast<WrappedD3D11ClassLinkage*>(pClassLinkage),
+				pRealShader, this);
 
-		return E_FAIL;
+			m_BackRefs[pRealShader] = static_cast<WrappedD3D11GeometryShader*>(*ppGeometryShader);
+			pRealShader->Release();
+		}
+
+		return ret;
 	}
 
 	HRESULT WrappedD3D11Device::CreatePixelShader(const void *pShaderBytecode, 
@@ -389,27 +403,18 @@ namespace rdcboost
 												  ID3D11PixelShader **ppPixelShader)
 	{
 		StopWatch s(&m_Counter[CREATE_SHADER]);
-		if (pClassLinkage != NULL)
-			LogError("Class linkage is not supported by now");
-
-		if (ppPixelShader == NULL)
-			return m_pReal->CreatePixelShader(pShaderBytecode, BytecodeLength, NULL, NULL);
-
-		ID3D11PixelShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreatePixelShader(pShaderBytecode, BytecodeLength,
-												 NULL, &pRealShader);
-		if (pRealShader)
+												 UnwrapSelf(pClassLinkage), ppPixelShader);
+		if (ppPixelShader && *ppPixelShader)
 		{
-			WrappedD3D11PixelShader* wrapped = 
-				new WrappedD3D11PixelShader(pShaderBytecode, BytecodeLength, pRealShader, this);
+			ID3D11PixelShader* pRealShader = *ppPixelShader;
+			*ppPixelShader = new WrappedD3D11PixelShader(
+									pShaderBytecode, BytecodeLength, 
+									static_cast<WrappedD3D11ClassLinkage*>(pClassLinkage),
+									pRealShader, this);
 
+			m_BackRefs[pRealShader] = static_cast<WrappedD3D11PixelShader*>(*ppPixelShader);
 			pRealShader->Release();
-			*ppPixelShader = wrapped;
-			m_BackRefs[pRealShader] = wrapped;
-		}
-		else
-		{
-			*ppPixelShader = NULL;
 		}
 
 		return ret;
@@ -421,29 +426,21 @@ namespace rdcboost
 												 ID3D11HullShader **ppHullShader)
 	{
 		StopWatch s(&m_Counter[CREATE_SHADER]);
-		if (pClassLinkage != NULL)
-			LogError("Class linkage is not supported by now");
-
-		if (ppHullShader == NULL)
-			return m_pReal->CreateHullShader(pShaderBytecode, BytecodeLength, NULL, NULL);
-
-		ID3D11HullShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateHullShader(pShaderBytecode, BytecodeLength,
-												NULL, &pRealShader);
-		if (pRealShader)
+												UnwrapSelf(pClassLinkage), ppHullShader);
+		if (ppHullShader && *ppHullShader)
 		{
-			WrappedD3D11HullShader* wrapped = 
-				new WrappedD3D11HullShader(pShaderBytecode, BytecodeLength, pRealShader, this);
+			ID3D11HullShader* pRealShader = *ppHullShader;
+			*ppHullShader = new WrappedD3D11HullShader(
+								pShaderBytecode, BytecodeLength,
+								static_cast<WrappedD3D11ClassLinkage*>(pClassLinkage),
+								pRealShader, this);
+
+			m_BackRefs[pRealShader] = static_cast<WrappedD3D11HullShader*>(*ppHullShader);
 			pRealShader->Release();
-			*ppHullShader = wrapped;
-			m_BackRefs[pRealShader] = wrapped;
-		}
-		else
-		{
-			*ppHullShader = NULL;
 		}
 
-		return ret;	
+		return ret;
 	}
 
 	HRESULT WrappedD3D11Device::CreateDomainShader(const void *pShaderBytecode, 
@@ -452,26 +449,18 @@ namespace rdcboost
 												   ID3D11DomainShader **ppDomainShader)
 	{
 		StopWatch s(&m_Counter[CREATE_SHADER]);
-		if (pClassLinkage != NULL)
-			LogError("Class linkage is not supported by now");
-
-		if (ppDomainShader == NULL)
-			return m_pReal->CreateDomainShader(pShaderBytecode, BytecodeLength, NULL, NULL);
-
-		ID3D11DomainShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateDomainShader(pShaderBytecode, BytecodeLength,
-												  NULL, &pRealShader);
-		if (pRealShader)
+												  UnwrapSelf(pClassLinkage), ppDomainShader);
+		if (ppDomainShader && *ppDomainShader)
 		{
-			WrappedD3D11DomainShader* wrapped = 
-				new WrappedD3D11DomainShader(pShaderBytecode, BytecodeLength, pRealShader, this);
+			ID3D11DomainShader* pRealShader = *ppDomainShader;
+			*ppDomainShader = new WrappedD3D11DomainShader(
+									pShaderBytecode, BytecodeLength,
+									static_cast<WrappedD3D11ClassLinkage*>(pClassLinkage),
+									pRealShader, this);
+
+			m_BackRefs[pRealShader] = static_cast<WrappedD3D11DomainShader*>(*ppDomainShader);
 			pRealShader->Release();
-			*ppDomainShader = wrapped;
-			m_BackRefs[pRealShader] = wrapped;
-		}
-		else
-		{
-			*ppDomainShader = NULL;
 		}
 
 		return ret;
@@ -483,26 +472,18 @@ namespace rdcboost
 													ID3D11ComputeShader **ppComputeShader)
 	{
 		StopWatch s(&m_Counter[CREATE_SHADER]);
-		if (pClassLinkage != NULL)
-			LogError("Class linkage is not supported by now");
-
-		if (ppComputeShader == NULL)
-			return m_pReal->CreateComputeShader(pShaderBytecode, BytecodeLength, NULL, NULL);
-
-		ID3D11ComputeShader* pRealShader = NULL;
 		HRESULT ret = m_pReal->CreateComputeShader(pShaderBytecode, BytecodeLength,
-												   NULL, &pRealShader);
-		if (pRealShader)
+												   UnwrapSelf(pClassLinkage), ppComputeShader);
+		if (ppComputeShader && *ppComputeShader)
 		{
-			WrappedD3D11ComputeShader* wrapped = 
-				new WrappedD3D11ComputeShader(pShaderBytecode, BytecodeLength, pRealShader, this);
+			ID3D11ComputeShader* pRealShader = *ppComputeShader;
+			*ppComputeShader = new WrappedD3D11ComputeShader(
+									pShaderBytecode, BytecodeLength,
+									static_cast<WrappedD3D11ClassLinkage*>(pClassLinkage),
+									pRealShader, this);
+
+			m_BackRefs[pRealShader] = static_cast<WrappedD3D11ComputeShader*>(*ppComputeShader);
 			pRealShader->Release();
-			*ppComputeShader = wrapped;
-			m_BackRefs[pRealShader] = wrapped;
-		}
-		else
-		{
-			*ppComputeShader = NULL;
 		}
 
 		return ret;
@@ -510,12 +491,16 @@ namespace rdcboost
 
 	HRESULT WrappedD3D11Device::CreateClassLinkage(ID3D11ClassLinkage **ppLinkage)
 	{
-		LogError("CreateClassLinkage is not supported by now");
+		HRESULT res = m_pReal->CreateClassLinkage(ppLinkage);
+		if (ppLinkage && *ppLinkage)
+		{
+			ID3D11ClassLinkage* pReal = *ppLinkage;
+			*ppLinkage = new WrappedD3D11ClassLinkage(pReal, this);
+			m_BackRefs[pReal] = static_cast<WrappedD3D11ClassLinkage*>(*ppLinkage);
+			pReal->Release();
+		}
 
-		if (ppLinkage)
-			*ppLinkage = NULL;
-
-		return E_FAIL;
+		return res;
 	}
 
 	HRESULT WrappedD3D11Device::CreateBlendState(const D3D11_BLEND_DESC *pBlendStateDesc, 
@@ -845,7 +830,49 @@ namespace rdcboost
 		}
 		else
 		{
-			LogError("Querying ID3D11Device for unknown interface");
+			if (riid == __uuidof(IDXGIDevice))
+			{
+				LogError("Querying ID3D11Device for IDXGIDevice, not support");
+			}
+			else if (riid == __uuidof(IDXGIDevice1))
+			{
+				LogError("Querying ID3D11Device for IDXGIDevice1, not support");
+			}
+			else if (riid == __uuidof(IDXGIDevice2))
+			{
+				LogError("Querying ID3D11Device for IDXGIDevice2, not support");
+			}
+			else if (riid == __uuidof(IDXGIDevice3))
+			{
+				LogError("Querying ID3D11Device for IDXGIDevice3, not support");
+			}
+			else if (riid == __uuidof(ID3D11Device1))
+			{
+				LogError("Querying ID3D11Device for ID3D11Device1, not support");
+			}
+			else if (riid == __uuidof(ID3D11Device2))
+			{
+				LogError("Querying ID3D11Device for ID3D11Device2, not support");
+			}
+			else if (riid == __uuidof(ID3D10Multithread))
+			{
+				LogError("Querying ID3D11Device for ID3D10Multithread, not support");
+			}
+			else if (riid == __uuidof(ID3D11InfoQueue))
+			{
+// 				LogError("Querying ID3D11Device for ID3D11InfoQueue, not support");
+				*ppvObject = static_cast<ID3D11InfoQueue*>(&m_DummyInfoQueue);
+				m_DummyInfoQueue.AddRef();
+				return S_OK;
+			}
+			else if (riid == __uuidof(ID3D11Debug))
+			{
+				LogError("Querying ID3D11Device for ID3D11Debug, not support");
+			}
+			else
+			{
+				LogError("Querying ID3D11Device for unknown interface");
+			}
 			return E_NOINTERFACE;
 		}
 	}
@@ -1009,6 +1036,16 @@ namespace rdcboost
 		{
 			m_Counter[i].QuadPart = 0;
 		}
+	}
+
+	ULONG STDMETHODCALLTYPE DummyID3D11InfoQueue::AddRef()
+	{
+		return m_pDevice->AddRef();
+	}
+
+	ULONG STDMETHODCALLTYPE DummyID3D11InfoQueue::Release()
+	{
+		return m_pDevice->Release();
 	}
 
 }
