@@ -102,10 +102,18 @@ namespace rdcboost
 		pRealDevice->Release();
 		pRealSwapChain->Release();
 
-		*ppDevice = wrappedDevice;
-		*ppSwapChain = wrappedSwapChain;
 		wrappedDevice->GetImmediateContext(ppImmediateContext);
 		wrappedDevice->SetAsRenderDocDevice(false);
+
+		if (ppDevice)
+			*ppDevice = wrappedDevice;
+		else
+			wrappedDevice->Release();
+
+		if (ppSwapChain)
+			*ppSwapChain = wrappedSwapChain;
+		else
+			wrappedSwapChain->Release();
 
 		return res;
 	}
@@ -132,7 +140,7 @@ namespace rdcboost
 		HRESULT res = pfnCreateDeviceAndSwapChain(
 							params.pAdapter, params.DriverType, params.Software,
 							params.Flags, params.pFeatureLevels, params.FeatureLevels,
-							params.SDKVersion, &params.SwapChainDesc,
+							params.SDKVersion, params.SwapChainDesc,
 							&pRealSwapChain, &pRealDevice, NULL, NULL);
 
 		if (FAILED(res))

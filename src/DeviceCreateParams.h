@@ -12,15 +12,18 @@ namespace rdcboost
 		D3D_FEATURE_LEVEL* pFeatureLevels;
 		UINT FeatureLevels;
 		UINT SDKVersion;
-		DXGI_SWAP_CHAIN_DESC SwapChainDesc;
+		DXGI_SWAP_CHAIN_DESC* SwapChainDesc;
 
 		SDeviceCreateParams(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE DriverType, HMODULE Software,
 							UINT Flags, const D3D_FEATURE_LEVEL* pFeatureLevels, UINT FeatureLevels,
 							UINT SDKVersion, const DXGI_SWAP_CHAIN_DESC* pSwapChainDesc) :
 							pAdapter(pAdapter), DriverType(DriverType), Software(Software),
 							Flags(Flags), FeatureLevels(FeatureLevels), SDKVersion(SDKVersion),
-							SwapChainDesc(*pSwapChainDesc)
+							SwapChainDesc(NULL)
 		{
+			if (pSwapChainDesc)
+				SwapChainDesc = new DXGI_SWAP_CHAIN_DESC(*pSwapChainDesc);
+
 			if (pAdapter != NULL)
 				pAdapter->AddRef();
 
@@ -39,8 +42,11 @@ namespace rdcboost
 		SDeviceCreateParams(const SDeviceCreateParams& rhs) :
 			pAdapter(rhs.pAdapter), DriverType(rhs.DriverType), Software(rhs.Software),
 			Flags(rhs.Flags), FeatureLevels(rhs.FeatureLevels), SDKVersion(rhs.SDKVersion),
-			SwapChainDesc(rhs.SwapChainDesc)
+			SwapChainDesc(NULL)
 		{
+			if (rhs.SwapChainDesc)
+				SwapChainDesc = new DXGI_SWAP_CHAIN_DESC(*rhs.SwapChainDesc);
+
 			if (pAdapter != NULL)
 				pAdapter->AddRef();
 
@@ -64,7 +70,10 @@ namespace rdcboost
 			Flags = rhs.Flags;
 			FeatureLevels = rhs.FeatureLevels;
 			SDKVersion = rhs.SDKVersion;
-			SwapChainDesc = rhs.SwapChainDesc;
+
+			delete SwapChainDesc;
+			if (rhs.SwapChainDesc)
+				SwapChainDesc = new DXGI_SWAP_CHAIN_DESC(*rhs.SwapChainDesc);
 
 			if (pAdapter != NULL)
 				pAdapter->AddRef();
@@ -89,6 +98,7 @@ namespace rdcboost
 				pAdapter->Release();
 
 			delete[] pFeatureLevels;
+			delete SwapChainDesc;
 		}
 	};
 }
