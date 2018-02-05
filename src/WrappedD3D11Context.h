@@ -11,6 +11,8 @@ namespace rdcboost
 	public:
 		WrappedD3D11Context(ID3D11DeviceContext* pRealContext, WrappedD3D11Device* pWrappedDevice);
 
+		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject);
+
 		virtual ULONG STDMETHODCALLTYPE Release(void);
 
 		ULONG GetRef() { return m_Ref; }

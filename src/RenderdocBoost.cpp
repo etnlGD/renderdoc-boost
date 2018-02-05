@@ -96,23 +96,36 @@ namespace rdcboost
 							FeatureLevels, SDKVersion, pSwapChainDesc, &pRealSwapChain,
 							&pRealDevice, pFeatureLevel, NULL);
 
-		WrappedD3D11Device* wrappedDevice = new WrappedD3D11Device(pRealDevice, params);
-		WrappedDXGISwapChain* wrappedSwapChain = new WrappedDXGISwapChain(pRealSwapChain, wrappedDevice);
-		wrappedDevice->InitSwapChain(wrappedSwapChain);
-		pRealDevice->Release();
-		pRealSwapChain->Release();
+		WrappedD3D11Device* wrappedDevice = NULL;
+		WrappedDXGISwapChain* wrappedSwapChain = NULL;
 
-		wrappedDevice->GetImmediateContext(ppImmediateContext);
-		wrappedDevice->SetAsRenderDocDevice(false);
+		if (pRealDevice)
+		{
+			wrappedDevice = new WrappedD3D11Device(pRealDevice, params);
+			pRealDevice->Release();
+			wrappedDevice->SetAsRenderDocDevice(false);
+
+			if (ppImmediateContext)
+				wrappedDevice->GetImmediateContext(ppImmediateContext);
+		}
+
+		if (pRealSwapChain)
+		{
+			wrappedSwapChain = new WrappedDXGISwapChain(pRealSwapChain, wrappedDevice);
+			pRealSwapChain->Release();
+		}
+
+		if (wrappedDevice && wrappedSwapChain)
+			wrappedDevice->InitSwapChain(wrappedSwapChain);
 
 		if (ppDevice)
 			*ppDevice = wrappedDevice;
-		else
+		else if (wrappedDevice)
 			wrappedDevice->Release();
 
 		if (ppSwapChain)
 			*ppSwapChain = wrappedSwapChain;
-		else
+		else if (wrappedSwapChain)
 			wrappedSwapChain->Release();
 
 		return res;

@@ -6,6 +6,7 @@
 #include "Log.h"
 #include "DeviceContextState.h"
 #include "WrappedD3D11Async.h"
+#include <d3d11_1.h>
 
 namespace rdcboost
 {
@@ -15,6 +16,16 @@ namespace rdcboost
 		WrappedD3D11DeviceChild(pRealContext, pWrappedDevice)
 	{
 		memset(m_SOOffsets, 0, sizeof(m_SOOffsets));
+	}
+
+	HRESULT STDMETHODCALLTYPE WrappedD3D11Context::QueryInterface(REFIID riid, void **ppvObject)
+	{
+		if (riid == __uuidof(ID3DUserDefinedAnnotation))
+		{
+			return GetActivePtr()->QueryInterface(riid, ppvObject);
+		}
+
+		return WrappedD3D11DeviceChild<ID3D11DeviceContext>::QueryInterface(riid, ppvObject);
 	}
 
 	ULONG STDMETHODCALLTYPE WrappedD3D11Context::Release(void)

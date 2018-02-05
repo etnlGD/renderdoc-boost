@@ -905,7 +905,8 @@ namespace rdcboost
 
 		// 3. copy resources to the new device.
 		// SwapChainBuffers need to do switch before other resources.
-		m_pWrappedSwapChain->SwitchToDevice(pNewSwapChain);
+		if (m_pWrappedSwapChain)
+			m_pWrappedSwapChain->SwitchToDevice(pNewSwapChain);
 
 		for (UINT Buffer = 0; Buffer < m_SwapChainBuffers.size(); ++Buffer)
 		{
@@ -986,15 +987,16 @@ namespace rdcboost
 
 	void WrappedD3D11Device::TryToRelease()
 	{
-		if (m_Ref == 2 && m_pWrappedContext->GetRef() == 1 &&
-			m_pWrappedSwapChain->GetRef() == 1)
+		unsigned int softRef = 0;
+		if (m_pWrappedSwapChain) ++softRef;
+		if (m_pWrappedSwapChain) ++softRef;
+
+		if (m_Ref == softRef && 
+			(!m_pWrappedContext || m_pWrappedContext->GetRef() == 1) &&
+			(!m_pWrappedSwapChain || m_pWrappedSwapChain->GetRef() == 1))
 		{
-			m_pWrappedContext->Release();
-			m_pWrappedContext = NULL;
-
-			m_pWrappedSwapChain->Release();
-			m_pWrappedSwapChain = NULL;
-
+			SAFE_RELEASE(m_pWrappedContext);
+			SAFE_RELEASE(m_pWrappedSwapChain);
 			delete this;
 		}
 	}
