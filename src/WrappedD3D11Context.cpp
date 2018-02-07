@@ -20,10 +20,10 @@ namespace rdcboost
 
 	HRESULT STDMETHODCALLTYPE WrappedD3D11Context::QueryInterface(REFIID riid, void **ppvObject)
 	{
-		if (riid == __uuidof(ID3DUserDefinedAnnotation))
-		{
-			return GetActivePtr()->QueryInterface(riid, ppvObject);
-		}
+// 		if (riid == __uuidof(ID3DUserDefinedAnnotation))
+// 		{
+// 			return GetActivePtr()->QueryInterface(riid, ppvObject);
+// 		}
 
 		return WrappedD3D11DeviceChild<ID3D11DeviceContext>::QueryInterface(riid, ppvObject);
 	}
