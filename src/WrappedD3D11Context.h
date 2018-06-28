@@ -1,15 +1,46 @@
 #pragma once
-#include <d3d11.h>
+#include <d3d11_1.h>
 #include "WrappedD3D11DeviceChild.h"
 
 namespace rdcboost
 {
+	class WrappedD3D11Context;
+	class WrappedD3DUserAnno : public ID3DUserDefinedAnnotation
+	{
+	public:
+		WrappedD3DUserAnno(WrappedD3D11Context* pImpl) : m_pImpl(pImpl) {}
+
+		virtual INT STDMETHODCALLTYPE BeginEvent(
+			/* [annotation] */
+			_In_  LPCWSTR Name);
+
+		virtual INT STDMETHODCALLTYPE EndEvent(void);
+
+		virtual void STDMETHODCALLTYPE SetMarker(
+			/* [annotation] */
+			_In_  LPCWSTR Name);
+
+		virtual BOOL STDMETHODCALLTYPE GetStatus(void);
+
+		virtual HRESULT STDMETHODCALLTYPE QueryInterface(
+			/* [in] */ REFIID riid,
+			/* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject);
+
+		virtual ULONG STDMETHODCALLTYPE AddRef(void);
+
+		virtual ULONG STDMETHODCALLTYPE Release(void);
+
+	private:
+		WrappedD3D11Context* m_pImpl;
+	};
+
 	struct SDeviceContextState;
 	class WrappedD3D11Device;
 	class WrappedD3D11Context : public WrappedD3D11DeviceChild<ID3D11DeviceContext>
 	{
 	public:
 		WrappedD3D11Context(ID3D11DeviceContext* pRealContext, WrappedD3D11Device* pWrappedDevice);
+		virtual ~WrappedD3D11Context();
 
 		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject);
 
@@ -830,6 +861,12 @@ namespace rdcboost
 		virtual ID3D11DeviceChild* CopyToDevice(ID3D11Device* pNewDevice);
 
 	private:
+		bool CheckDeviceStatus();
+		void CheckBeforeCommand();
+
+		enum ECommandType { ECT_DRAW_COMMAND, ECT_COMPUTE_COMMAND, ECT_COPY_COMMAND, ECT_UPDATE_COMMAND };
+		void CheckAfterCommand(ECommandType commandType);
+
 		void SetConstantBuffers_imp(UINT StartSlot, UINT NumBuffers, 
 									ID3D11Buffer *const *ppConstantBuffers,
 									void (STDMETHODCALLTYPE ID3D11DeviceContext::* pfn)(UINT, UINT, ID3D11Buffer*const*));
@@ -880,5 +917,7 @@ namespace rdcboost
 
 	private:
 		UINT m_SOOffsets[D3D11_SO_BUFFER_SLOT_COUNT];
+		WrappedD3DUserAnno m_UserAnno;
+		ID3D11Query* m_pFlushQuery;
 	};
 }

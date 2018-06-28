@@ -8,22 +8,31 @@
 #include "WrappedD3D11Async.h"
 #include <d3d11_1.h>
 
+#define ENABLE_DEVICE_STATUS_CHECK 0
 namespace rdcboost
 {
 
 	WrappedD3D11Context::WrappedD3D11Context(
 		ID3D11DeviceContext* pRealContext, WrappedD3D11Device* pWrappedDevice) :
-		WrappedD3D11DeviceChild(pRealContext, pWrappedDevice)
+		WrappedD3D11DeviceChild(pRealContext, pWrappedDevice),
+		m_UserAnno(this), m_pFlushQuery(NULL)
 	{
 		memset(m_SOOffsets, 0, sizeof(m_SOOffsets));
 	}
 
+	WrappedD3D11Context::~WrappedD3D11Context()
+	{
+		SAFE_RELEASE(m_pFlushQuery);
+	}
+
 	HRESULT STDMETHODCALLTYPE WrappedD3D11Context::QueryInterface(REFIID riid, void **ppvObject)
 	{
-// 		if (riid == __uuidof(ID3DUserDefinedAnnotation))
-// 		{
-// 			return GetActivePtr()->QueryInterface(riid, ppvObject);
-// 		}
+		if (riid == __uuidof(ID3DUserDefinedAnnotation))
+		{
+			(*ppvObject) = &m_UserAnno;
+			m_UserAnno.AddRef();
+			return S_OK;
+		}
 
 		return WrappedD3D11DeviceChild<ID3D11DeviceContext>::QueryInterface(riid, ppvObject);
 	}
@@ -234,74 +243,168 @@ namespace rdcboost
 #pragma endregion SetShader
 
 
-	void WrappedD3D11Context::DrawIndexed(UINT IndexCount, UINT StartIndexLocation, 
-										   INT BaseVertexLocation)
+	bool WrappedD3D11Context::CheckDeviceStatus()
 	{
-		GetActivePtr()->DrawIndexed(IndexCount, StartIndexLocation, BaseVertexLocation);
+		ID3D11DeviceContext* pContext = GetActivePtr();
+
+		if (m_pFlushQuery == NULL)
+		{
+			D3D11_QUERY_DESC QueryDesc;
+			QueryDesc.Query = D3D11_QUERY_EVENT;
+			QueryDesc.MiscFlags = 0;
+			GetRealDevice()->CreateQuery(&QueryDesc, &m_pFlushQuery);
+		}
+
+		pContext->End(m_pFlushQuery);
+		pContext->Flush();
+
+		BOOL bExecuted = false;
+		while (S_OK != pContext->GetData(m_pFlushQuery, &bExecuted, sizeof(BOOL), 0))
+		{
+			/* wait until finished */;
+		}
+
+		return GetRealDevice()->GetDeviceRemovedReason() == S_OK;
+	}
+
+	void WrappedD3D11Context::CheckBeforeCommand()
+	{
+#if ENABLE_DEVICE_STATUS_CHECK
+		if (!CheckDeviceStatus())
+		{
+			LogError("Device Lost before draw/compute.");
+			DebugBreak();
+		}
+#endif
+	}
+
+	void WrappedD3D11Context::CheckAfterCommand(ECommandType commandType)
+	{
+#if ENABLE_DEVICE_STATUS_CHECK
+		if (!CheckDeviceStatus())
+		{
+			ID3D11DeviceChild* pShader = NULL;
+			if (commandType == ECT_DRAW_COMMAND)
+			{
+				ID3D11PixelShader* pPixelShader = NULL;
+				PSGetShader(&pPixelShader, NULL, NULL);
+				pShader = pPixelShader;
+			}
+			else if (commandType == ECT_COMPUTE_COMMAND)
+			{
+				ID3D11ComputeShader* pComputeShader = NULL;
+				CSGetShader(&pComputeShader, NULL, NULL);
+				pShader = pComputeShader;
+			}
+
+			std::string shaderName;
+			if (pShader != NULL)
+			{
+				char data[256];
+				UINT size = sizeof(data);
+				if (pShader->GetPrivateData(WKPDID_D3DDebugObjectName, &size, data) == S_OK)
+					shaderName.assign(data, size);
+				SAFE_RELEASE(pShader);
+			}
+			
+			LogError("Device Lost after draw/compute(%s).", shaderName.c_str());
+			DebugBreak();
+		}
+#endif
 	}
 
 	void WrappedD3D11Context::Draw(UINT VertexCount, UINT StartVertexLocation)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->Draw(VertexCount, StartVertexLocation);
+		CheckAfterCommand(ECT_DRAW_COMMAND);
+	}
+
+	void WrappedD3D11Context::DrawIndexed(UINT IndexCount, UINT StartIndexLocation,
+										  INT BaseVertexLocation)
+	{
+		CheckBeforeCommand();
+		GetActivePtr()->DrawIndexed(IndexCount, StartIndexLocation, BaseVertexLocation);
+		CheckAfterCommand(ECT_DRAW_COMMAND);
 	}
 
 	void WrappedD3D11Context::DrawIndexedInstanced(
 		UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation,
 		INT BaseVertexLocation, UINT StartInstanceLocation)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->DrawIndexedInstanced(IndexCountPerInstance, InstanceCount,
 											 StartIndexLocation, BaseVertexLocation,
 											 StartInstanceLocation);
+		CheckAfterCommand(ECT_DRAW_COMMAND);
 	}
 
 	void WrappedD3D11Context::DrawInstanced(UINT VertexCountPerInstance, UINT InstanceCount,
 											UINT StartVertexLocation,
 											UINT StartInstanceLocation)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->DrawInstanced(VertexCountPerInstance, InstanceCount,
 									  StartVertexLocation, StartInstanceLocation);
+		CheckAfterCommand(ECT_DRAW_COMMAND);
 	}
 
 	void WrappedD3D11Context::DrawAuto()
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->DrawAuto();
+		CheckAfterCommand(ECT_DRAW_COMMAND);
 	}
 
 	void WrappedD3D11Context::DrawIndexedInstancedIndirect(
 		ID3D11Buffer *pBufferForArgs, UINT AlignedByteOffsetForArgs)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->DrawIndexedInstancedIndirect(Unwrap(pBufferForArgs), AlignedByteOffsetForArgs);
+		CheckAfterCommand(ECT_DRAW_COMMAND);
 	}
 
 	void WrappedD3D11Context::DrawInstancedIndirect(ID3D11Buffer *pBufferForArgs,
 													UINT AlignedByteOffsetForArgs)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->DrawInstancedIndirect(Unwrap(pBufferForArgs), AlignedByteOffsetForArgs);
+		CheckAfterCommand(ECT_DRAW_COMMAND);
 	}
 
 	void WrappedD3D11Context::Dispatch(UINT ThreadGroupCountX, UINT ThreadGroupCountY,
 									   UINT ThreadGroupCountZ)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
+		CheckAfterCommand(ECT_COMPUTE_COMMAND);
 	}
 
 	void WrappedD3D11Context::DispatchIndirect(ID3D11Buffer *pBufferForArgs,
 											   UINT AlignedByteOffsetForArgs)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->DispatchIndirect(Unwrap(pBufferForArgs), AlignedByteOffsetForArgs);
+		CheckAfterCommand(ECT_COMPUTE_COMMAND);
 	}
 
 	HRESULT WrappedD3D11Context::Map(ID3D11Resource *pResource, UINT Subresource, 
 									 D3D11_MAP MapType, UINT MapFlags, 
 									 D3D11_MAPPED_SUBRESOURCE *pMappedResource)
 	{
-		return GetActivePtr()->Map(Unwrap(pResource), Subresource, 
-								   MapType, MapFlags, pMappedResource);
+		CheckBeforeCommand();
+		HRESULT res = GetActivePtr()->Map(Unwrap(pResource), Subresource, 
+										  MapType, MapFlags, pMappedResource);
+		CheckAfterCommand(ECT_UPDATE_COMMAND);
+
+		return res;
 	}
 
 	void WrappedD3D11Context::Unmap(ID3D11Resource *pResource, UINT Subresource)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->Unmap(Unwrap(pResource), Subresource);
+		CheckAfterCommand(ECT_UPDATE_COMMAND);
 	}
 
 	void WrappedD3D11Context::IASetInputLayout(ID3D11InputLayout *pInputLayout)
@@ -500,29 +603,37 @@ namespace rdcboost
 		ID3D11Resource *pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, 
 		ID3D11Resource *pSrcResource, UINT SrcSubresource, const D3D11_BOX *pSrcBox)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->CopySubresourceRegion(
 			Unwrap(pDstResource), DstSubresource, DstX, DstY, DstZ, 
 			Unwrap(pSrcResource), SrcSubresource, pSrcBox);
+		CheckAfterCommand(ECT_COPY_COMMAND);
 	}
 
 	void WrappedD3D11Context::CopyResource(ID3D11Resource *pDstResource, ID3D11Resource *pSrcResource)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->CopyResource(Unwrap(pDstResource), Unwrap(pSrcResource));
-	}
-
-	void WrappedD3D11Context::UpdateSubresource(
-		ID3D11Resource *pDstResource, UINT DstSubresource, const D3D11_BOX *pDstBox, 
-		const void *pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch)
-	{
-		GetActivePtr()->UpdateSubresource(Unwrap(pDstResource), DstSubresource, pDstBox, 
-										  pSrcData, SrcRowPitch, SrcDepthPitch);
+		CheckAfterCommand(ECT_COPY_COMMAND);
 	}
 
 	void WrappedD3D11Context::CopyStructureCount(ID3D11Buffer *pDstBuffer, UINT DstAlignedByteOffset, 
 												  ID3D11UnorderedAccessView *pSrcView)
 	{
+		CheckBeforeCommand();
 		GetActivePtr()->CopyStructureCount(
 			Unwrap(pDstBuffer), DstAlignedByteOffset, Unwrap(pSrcView));
+		CheckAfterCommand(ECT_COPY_COMMAND);
+	}
+
+	void WrappedD3D11Context::UpdateSubresource(
+		ID3D11Resource *pDstResource, UINT DstSubresource, const D3D11_BOX *pDstBox,
+		const void *pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch)
+	{
+		CheckBeforeCommand();
+		GetActivePtr()->UpdateSubresource(Unwrap(pDstResource), DstSubresource, pDstBox,
+										  pSrcData, SrcRowPitch, SrcDepthPitch);
+		CheckAfterCommand(ECT_UPDATE_COMMAND);
 	}
 
 	void WrappedD3D11Context::ClearRenderTargetView(ID3D11RenderTargetView *pRenderTargetView, const FLOAT ColorRGBA[4])
@@ -891,6 +1002,8 @@ namespace rdcboost
 
 	ID3D11DeviceChild* WrappedD3D11Context::CopyToDevice(ID3D11Device* pNewDevice)
 	{
+		SAFE_RELEASE(m_pFlushQuery);
+
 		if (GetReal()->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE)
 		{
 			ID3D11DeviceContext* pNewImmediateContext = NULL;
@@ -902,6 +1015,59 @@ namespace rdcboost
 			LogError("Deferred context is not supported by now");
 			return NULL;
 		}
+	}
+
+	HRESULT STDMETHODCALLTYPE WrappedD3DUserAnno::QueryInterface(/* [in] */ REFIID riid, /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
+	{
+		return m_pImpl->QueryInterface(riid, ppvObject);
+	}
+
+	ULONG STDMETHODCALLTYPE WrappedD3DUserAnno::AddRef(void)
+	{
+		return m_pImpl->AddRef();
+	}
+
+	ULONG STDMETHODCALLTYPE WrappedD3DUserAnno::Release(void)
+	{
+		return m_pImpl->Release();
+	}
+
+	BOOL STDMETHODCALLTYPE WrappedD3DUserAnno::GetStatus(void)
+	{
+		ID3DUserDefinedAnnotation* pAnno = NULL;
+		m_pImpl->GetActivePtr()->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), (void**)&pAnno);
+		if (pAnno)
+			return pAnno->GetStatus();
+
+		return 0;
+	}
+
+	void STDMETHODCALLTYPE WrappedD3DUserAnno::SetMarker(/* [annotation] */ _In_ LPCWSTR Name)
+	{
+		ID3DUserDefinedAnnotation* pAnno = NULL;
+		m_pImpl->GetActivePtr()->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), (void**)&pAnno);
+		if (pAnno)
+			pAnno->SetMarker(Name);
+	}
+
+	INT STDMETHODCALLTYPE WrappedD3DUserAnno::EndEvent(void)
+	{
+		ID3DUserDefinedAnnotation* pAnno = NULL;
+		m_pImpl->GetActivePtr()->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), (void**)&pAnno);
+		if (pAnno)
+			return pAnno->EndEvent();
+
+		return 0;
+	}
+
+	INT STDMETHODCALLTYPE WrappedD3DUserAnno::BeginEvent(/* [annotation] */ _In_ LPCWSTR Name)
+	{
+		ID3DUserDefinedAnnotation* pAnno = NULL;
+		m_pImpl->GetActivePtr()->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), (void**)&pAnno);
+		if (pAnno)
+			return pAnno->BeginEvent(Name);
+
+		return 0;
 	}
 
 }

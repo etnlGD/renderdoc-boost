@@ -946,7 +946,10 @@ namespace rdcboost
 		m_pWrappedContext->SwitchToDevice(pNewDevice);
 		m_pWrappedContext->RestoreState(&deviceContextState);
 
-		Assert(m_pReal->Release() == 0);
+		ULONG refs = m_pReal->Release();
+		if (refs != 0)
+			LogError("Previous real device ref count: %d", (int) refs);
+
 		pNewDevice->AddRef();
 		m_pReal = pNewDevice;
 	}
@@ -988,7 +991,7 @@ namespace rdcboost
 	void WrappedD3D11Device::TryToRelease()
 	{
 		unsigned int softRef = 0;
-		if (m_pWrappedSwapChain) ++softRef;
+		if (m_pWrappedContext) ++softRef;
 		if (m_pWrappedSwapChain) ++softRef;
 
 		if (m_Ref == softRef && 
